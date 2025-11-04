@@ -1,0 +1,52 @@
+{
+  "timestamp": "20251104_195530",
+  "pr_number": 2,
+  "selected_prompt": "Chain-of-Thought",
+  "review_score": 8.38,
+  "features": {
+    "num_lines": 28,
+    "num_files": 1,
+    "additions": 8,
+    "deletions": 2,
+    "net_changes": 6,
+    "has_comments": 0,
+    "has_functions": 1,
+    "has_imports": 1,
+    "has_test": 0,
+    "has_docs": 0,
+    "has_config": 1,
+    "is_python": 1,
+    "is_js": 0,
+    "is_java": 0
+  },
+  "heuristics": {
+    "length_chars": 2971,
+    "length_words": 432,
+    "bullet_points": 0,
+    "mentions_bug": true,
+    "mentions_suggest": true,
+    "sections_presence": {
+      "summary": false,
+      "bugs": true,
+      "errors": false,
+      "code quality": true,
+      "suggestions": false,
+      "improvements": false,
+      "tests": true,
+      "positive": false,
+      "final review": true
+    }
+  },
+  "meta_evaluation": {
+    "clarity": 9,
+    "usefulness": 10,
+    "depth": 10,
+    "actionability": 9,
+    "positivity": 6,
+    "explain": "The review is thorough and provides actionable feedback, but could be more positive in tone and does not fully address the static analysis results as they seem to indicate tool configuration issues rather than code problems."
+  },
+  "static_output_summary": "=== \ud83d\udd0d Targeted Static Analysis for PYTHON (1 files changed) ===\n\n| \ud83e\udde9 Pylint:\n```\n************* Modul...",
+  "retrieved_context_summary": "# Our Engineering Coding Standards\n\n## Python\n- All functions must have type hints.\n- Use `black` fo...",
+  "training_data_size": 3,
+  "model_trained": false
+}

@@ -1,0 +1,52 @@
+{
+  "timestamp": "20251104_195334",
+  "pr_number": 6,
+  "selected_prompt": "Zero-shot",
+  "review_score": 8.92,
+  "features": {
+    "num_lines": 32,
+    "num_files": 1,
+    "additions": 16,
+    "deletions": 1,
+    "net_changes": 15,
+    "has_comments": 0,
+    "has_functions": 1,
+    "has_imports": 1,
+    "has_test": 0,
+    "has_docs": 0,
+    "has_config": 0,
+    "is_python": 1,
+    "is_js": 0,
+    "is_java": 0
+  },
+  "heuristics": {
+    "length_chars": 2804,
+    "length_words": 461,
+    "bullet_points": 7,
+    "mentions_bug": true,
+    "mentions_suggest": true,
+    "sections_presence": {
+      "summary": false,
+      "bugs": false,
+      "errors": false,
+      "code quality": true,
+      "suggestions": true,
+      "improvements": false,
+      "tests": true,
+      "positive": false,
+      "final review": false
+    }
+  },
+  "meta_evaluation": {
+    "clarity": 9,
+    "usefulness": 10,
+    "depth": 9,
+    "actionability": 10,
+    "positivity": 8,
+    "explain": "The review is clear, useful, and actionable, but could be more positive in tone, and the reviewer effectively used static analysis and context to identify issues and provide suggestions."
+  },
+  "static_output_summary": "=== \ud83d\udd0d Targeted Static Analysis for PYTHON (1 files changed) ===\n\n| \ud83e\udde9 Pylint:\n```\n************* Modul...",
+  "retrieved_context_summary": "# Our Engineering Coding Standards\n\n## Python\n- All functions must have type hints.\n- Use `black` fo...",
+  "training_data_size": 1,
+  "model_trained": false
+}

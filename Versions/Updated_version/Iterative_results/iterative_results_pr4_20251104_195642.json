@@ -1,0 +1,52 @@
+{
+  "timestamp": "20251104_195642",
+  "pr_number": 4,
+  "selected_prompt": "Self-Consistency",
+  "review_score": 7.97,
+  "features": {
+    "num_lines": 27,
+    "num_files": 1,
+    "additions": 9,
+    "deletions": 5,
+    "net_changes": 4,
+    "has_comments": 0,
+    "has_functions": 1,
+    "has_imports": 1,
+    "has_test": 0,
+    "has_docs": 0,
+    "has_config": 0,
+    "is_python": 0,
+    "is_js": 1,
+    "is_java": 0
+  },
+  "heuristics": {
+    "length_chars": 2372,
+    "length_words": 382,
+    "bullet_points": 3,
+    "mentions_bug": true,
+    "mentions_suggest": true,
+    "sections_presence": {
+      "summary": false,
+      "bugs": false,
+      "errors": false,
+      "code quality": true,
+      "suggestions": false,
+      "improvements": true,
+      "tests": true,
+      "positive": true,
+      "final review": false
+    }
+  },
+  "meta_evaluation": {
+    "clarity": 9,
+    "usefulness": 8,
+    "depth": 9,
+    "actionability": 8,
+    "positivity": 7,
+    "explain": "Review C is the most comprehensive, highlighting both positive changes and areas for improvement, such as the ESLint issue and the need for unit tests, making it the most useful and actionable review."
+  },
+  "static_output_summary": "=== \ud83d\udd0d Targeted Static Analysis for JAVASCRIPT (1 files changed) ===\n\n| ESLint: \u274c Command not found. ...",
+  "retrieved_context_summary": "# Our Engineering Coding Standards\n\n## Python\n- All functions must have type hints.\n- Use `black` fo...",
+  "training_data_size": 5,
+  "model_trained": true
+}
