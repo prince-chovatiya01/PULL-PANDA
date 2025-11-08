@@ -329,3 +329,235 @@ class TestOllamaAPIInteraction:
 
         with pytest.raises(requests.exceptions.HTTPError):
             ollama_code.get_ollama_review("test")
+
+
+# Test cases for prompt generation
+class TestPromptGeneration:
+    """Test suite for prompt formatting"""
+
+    def test_prompt_contains_required_sections(self, sample_pr_diff):
+        """Test that generated prompt contains all required sections"""
+        prompt = ollama_code.generate_review_prompt(sample_pr_diff)
+
+        assert "## Summary" in prompt
+        assert "## Strengths" in prompt
+        assert "## Issues / Suggestions" in prompt
+        assert "## Final Verdict" in prompt
+        assert sample_pr_diff in prompt
+        assert "GitHub code reviewer" in prompt
+
+    def test_prompt_includes_diff_content(self):
+        """Test that diff content is properly included in prompt"""
+        test_diff = "diff --git a/test.py b/test.py\n+added line"
+        prompt = ollama_code.generate_review_prompt(test_diff)
+
+        assert test_diff in prompt
+        assert "diff --git" in prompt
+        assert "+added line" in prompt
+
+    def test_prompt_with_empty_diff(self):
+        """Test prompt generation with empty diff"""
+        prompt = ollama_code.generate_review_prompt("")
+        
+        assert "## Summary" in prompt
+        assert "Here is the diff:" in prompt
+
+    def test_prompt_with_special_characters(self):
+        """Test prompt generation with special characters in diff"""
+        special_diff = "diff --git\n+line with 'quotes' and \"double quotes\"\n+line with $pecial ch@rs"
+        prompt = ollama_code.generate_review_prompt(special_diff)
+        
+        assert special_diff in prompt
+        assert "'quotes'" in prompt
+        assert "$pecial" in prompt
+
+
+# Integration test - review_pr function
+class TestReviewPRFunction:
+    """Test suite for review_pr function"""
+
+    @patch("ollama_code_refactored.get_ollama_review")
+    @patch("ollama_code_refactored.fetch_pr_diff")
+    @patch("ollama_code_refactored.load_github_token")
+    @patch("builtins.print")
+    def test_review_pr_success(self, mock_print, mock_token, mock_fetch, mock_ollama, sample_pr_diff):
+        """Test successful PR review workflow"""
+        mock_token.return_value = "test_token"
+        mock_fetch.return_value = sample_pr_diff
+        mock_ollama.return_value = "## Summary\nLooks good"
+
+        result = ollama_code.review_pr("owner", "repo", 1)
+
+        assert result["diff"] == sample_pr_diff
+        assert result["review"] == "## Summary\nLooks good"
+        mock_fetch.assert_called_once_with("owner", "repo", 1, "test_token")
+        mock_ollama.assert_called_once()
+        
+        # Check that print statements were called
+        assert mock_print.call_count >= 3  # Should print fetching, fetched, generating, generated
+
+    @patch("ollama_code_refactored.get_ollama_review")
+    @patch("ollama_code_refactored.fetch_pr_diff")
+    @patch("builtins.print")
+    def test_review_pr_with_provided_token(self, mock_print, mock_fetch, mock_ollama, sample_pr_diff):
+        """Test review_pr with explicitly provided token"""
+        mock_fetch.return_value = sample_pr_diff
+        mock_ollama.return_value = "Review text"
+
+        result = ollama_code.review_pr("owner", "repo", 1, token="explicit_token")
+
+        assert result["diff"] == sample_pr_diff
+        mock_fetch.assert_called_once_with("owner", "repo", 1, "explicit_token")
+
+    @patch("ollama_code_refactored.get_ollama_review")
+    @patch("ollama_code_refactored.fetch_pr_diff")
+    @patch("builtins.print")
+    def test_review_pr_with_custom_model(self, mock_print, mock_fetch, mock_ollama, sample_pr_diff):
+        """Test review_pr with custom model"""
+        mock_fetch.return_value = sample_pr_diff
+        mock_ollama.return_value = "Review"
+
+        ollama_code.review_pr("owner", "repo", 1, token="token", model="llama2")
+
+        call_args = mock_ollama.call_args
+        assert call_args[1]["model"] == "llama2"
+
+    @patch("ollama_code_refactored.fetch_pr_diff")
+    @patch("ollama_code_refactored.load_github_token")
+    def test_review_pr_fetch_failure(self, mock_token, mock_fetch):
+        """Test review_pr when fetch fails"""
+        mock_token.return_value = "test_token"
+        mock_fetch.side_effect = ValueError("PR not found")
+
+        with pytest.raises(ValueError, match="PR not found"):
+            ollama_code.review_pr("owner", "repo", 1)
+
+    @patch("ollama_code_refactored.get_ollama_review")
+    @patch("ollama_code_refactored.fetch_pr_diff")
+    @patch("ollama_code_refactored.load_github_token")
+    def test_review_pr_ollama_failure(self, mock_token, mock_fetch, mock_ollama):
+        """Test review_pr when Ollama fails"""
+        mock_token.return_value = "test_token"
+        mock_fetch.return_value = "diff"
+        mock_ollama.side_effect = ConnectionError("Ollama not running")
+
+        with pytest.raises(ConnectionError, match="Ollama not running"):
+            ollama_code.review_pr("owner", "repo", 1)
+
+    @patch("ollama_code_refactored.get_ollama_review")
+    @patch("ollama_code_refactored.fetch_pr_diff")
+    @patch("ollama_code_refactored.load_github_token")
+    @patch("builtins.print")
+    def test_review_pr_prints_progress(self, mock_print, mock_token, mock_fetch, mock_ollama):
+        """Test that review_pr prints progress messages"""
+        mock_token.return_value = "token"
+        mock_fetch.return_value = "diff content"
+        mock_ollama.return_value = "review"
+
+        ollama_code.review_pr("owner", "repo", 1)
+
+        # Verify progress messages
+        print_calls = [str(call) for call in mock_print.call_args_list]
+        assert any("Fetching PR" in str(call) for call in print_calls)
+        assert any("Fetched" in str(call) for call in print_calls)
+        assert any("Generating review" in str(call) for call in print_calls)
+        assert any("Review generated" in str(call) for call in print_calls)
+
+
+# Test main function
+class TestMainFunction:
+    """Test suite for main CLI function"""
+
+    @patch("ollama_code_refactored.review_pr")
+    @patch("builtins.print")
+    def test_main_success(self, mock_print, mock_review):
+        """Test successful main execution"""
+        mock_review.return_value = {
+            "diff": "diff content here that is longer than 500 chars " + "x" * 500,
+            "review": "## Summary\nLooks good"
+        }
+
+        exit_code = ollama_code.main()
+
+        assert exit_code == 0
+        # Check that output contains expected sections
+        print_calls = [str(call) for call in mock_print.call_args_list]
+        output_str = " ".join(print_calls)
+        assert "PR DIFF" in output_str or any("PR DIFF" in str(call) for call in print_calls)
+
+    @patch("ollama_code_refactored.review_pr")
+    def test_main_value_error(self, mock_review, capsys):
+        """Test main with ValueError"""
+        mock_review.side_effect = ValueError("Token not found")
+
+        exit_code = ollama_code.main()
+
+        assert exit_code == 1
+        captured = capsys.readouterr()
+        assert "Token not found" in captured.err
+
+    @patch("ollama_code_refactored.review_pr")
+    def test_main_connection_error(self, mock_review, capsys):
+        """Test main with ConnectionError"""
+        mock_review.side_effect = ConnectionError("Cannot connect")
+
+        exit_code = ollama_code.main()
+
+        assert exit_code == 1
+        captured = capsys.readouterr()
+        assert "Cannot connect" in captured.err
+
+    @patch("ollama_code_refactored.review_pr")
+    def test_main_timeout_error(self, mock_review, capsys):
+        """Test main with TimeoutError"""
+        mock_review.side_effect = TimeoutError("Request timed out")
+
+        exit_code = ollama_code.main()
+
+        assert exit_code == 1
+        captured = capsys.readouterr()
+        assert "timed out" in captured.err
+
+    @patch("ollama_code_refactored.review_pr")
+    def test_main_unexpected_error(self, mock_review, capsys):
+        """Test main with unexpected error"""
+        mock_review.side_effect = RuntimeError("Unexpected problem")
+
+        exit_code = ollama_code.main()
+
+        assert exit_code == 1
+        captured = capsys.readouterr()
+        assert "Unexpected error" in captured.err
+        assert "Unexpected problem" in captured.err
+
+    @patch("ollama_code_refactored.review_pr")
+    def test_main_uses_correct_config(self, mock_review):
+        """Test that main uses correct hardcoded configuration"""
+        mock_review.return_value = {"diff": "d", "review": "r"}
+
+        ollama_code.main()
+
+        mock_review.assert_called_once_with(
+            "prince-chovatiya01",
+            "nutrition-diet-planner",
+            2
+        )
+
+    @patch("ollama_code_refactored.review_pr")
+    @patch("builtins.print")
+    def test_main_displays_full_output(self, mock_print, mock_review):
+        """Test that main displays all output sections"""
+        mock_review.return_value = {
+            "diff": "test diff content",
+            "review": "test review content"
+        }
+
+        exit_code = ollama_code.main()
+
+        assert exit_code == 0
+        print_calls = [str(call) for call in mock_print.call_args_list]
+        output_str = " ".join(print_calls)
+        
+        # Check for section headers
+        assert any("PR DIFF" in str(call) for call in print_calls)
+        assert any("AI REVIEW" in str(call) for call in print_calls)
