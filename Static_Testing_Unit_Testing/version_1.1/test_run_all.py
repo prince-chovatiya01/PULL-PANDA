@@ -7,19 +7,19 @@ import pytest
 import os
 import csv
 from unittest.mock import Mock, patch, mock_open
-from accuracy_checker import run_all
+from accuracy_checker_refactored import run_all
 
 
 class TestRunAll:
     """Test suite for run_all function."""
 
-    @patch('accuracy_checker.save_text_to_file')
-    @patch('accuracy_checker.meta_evaluate')
-    @patch('accuracy_checker.heuristic_metrics')
-    @patch('accuracy_checker.fetch_pr_diff')
-    @patch('accuracy_checker.get_prompts')
-    @patch('accuracy_checker.llm')
-    @patch('accuracy_checker.parser')
+    @patch('accuracy_checker_refactored.save_text_to_file')
+    @patch('accuracy_checker_refactored.meta_evaluate')
+    @patch('accuracy_checker_refactored.heuristic_metrics')
+    @patch('accuracy_checker_refactored.fetch_pr_diff')
+    @patch('accuracy_checker_refactored.get_prompts')
+    @patch('accuracy_checker_refactored.llm')
+    @patch('accuracy_checker_refactored.parser')
     def test_basic_execution_flow(self, mock_parser, mock_llm, mock_prompts, mock_fetch, mock_heur, 
                                   mock_meta, mock_save):
         """Test basic execution with single prompt."""
@@ -55,13 +55,13 @@ class TestRunAll:
         assert "final_score" in results[0]
         assert mock_save.called
 
-    @patch('accuracy_checker.save_text_to_file')
-    @patch('accuracy_checker.meta_evaluate')
-    @patch('accuracy_checker.heuristic_metrics')
-    @patch('accuracy_checker.fetch_pr_diff')
-    @patch('accuracy_checker.get_prompts')
-    @patch('accuracy_checker.llm')
-    @patch('accuracy_checker.parser')
+    @patch('accuracy_checker_refactored.save_text_to_file')
+    @patch('accuracy_checker_refactored.meta_evaluate')
+    @patch('accuracy_checker_refactored.heuristic_metrics')
+    @patch('accuracy_checker_refactored.fetch_pr_diff')
+    @patch('accuracy_checker_refactored.get_prompts')
+    @patch('accuracy_checker_refactored.llm')
+    @patch('accuracy_checker_refactored.parser')
     def test_multiple_prompts_execution(self, mock_parser, mock_llm, mock_prompts, mock_fetch, 
                                        mock_heur, mock_meta, mock_save):
         """Test execution with multiple prompts."""
@@ -100,13 +100,13 @@ class TestRunAll:
         assert len(results) == 3
         assert all("prompt" in r for r in results)
 
-    @patch('accuracy_checker.save_text_to_file')
-    @patch('accuracy_checker.meta_evaluate')
-    @patch('accuracy_checker.heuristic_metrics')
-    @patch('accuracy_checker.fetch_pr_diff')
-    @patch('accuracy_checker.get_prompts')
-    @patch('accuracy_checker.llm')
-    @patch('accuracy_checker.parser')
+    @patch('accuracy_checker_refactored.save_text_to_file')
+    @patch('accuracy_checker_refactored.meta_evaluate')
+    @patch('accuracy_checker_refactored.heuristic_metrics')
+    @patch('accuracy_checker_refactored.fetch_pr_diff')
+    @patch('accuracy_checker_refactored.get_prompts')
+    @patch('accuracy_checker_refactored.llm')
+    @patch('accuracy_checker_refactored.parser')
     def test_results_sorted_by_final_score(self, mock_parser, mock_llm, mock_prompts, mock_fetch,
                                           mock_heur, mock_meta, mock_save):
         """Test that results are sorted by final score ascending."""
@@ -155,13 +155,13 @@ class TestRunAll:
         scores = [r["final_score"] for r in results]
         assert scores == sorted(scores)
 
-    @patch('accuracy_checker.save_text_to_file')
-    @patch('accuracy_checker.meta_evaluate')
-    @patch('accuracy_checker.heuristic_metrics')
-    @patch('accuracy_checker.fetch_pr_diff')
-    @patch('accuracy_checker.get_prompts')
-    @patch('accuracy_checker.llm')
-    @patch('accuracy_checker.parser')
+    @patch('accuracy_checker_refactored.save_text_to_file')
+    @patch('accuracy_checker_refactored.meta_evaluate')
+    @patch('accuracy_checker_refactored.heuristic_metrics')
+    @patch('accuracy_checker_refactored.fetch_pr_diff')
+    @patch('accuracy_checker_refactored.get_prompts')
+    @patch('accuracy_checker_refactored.llm')
+    @patch('accuracy_checker_refactored.parser')
     def test_prompt_invoke_exception_handling(self, mock_parser, mock_llm, mock_prompts, mock_fetch,
                                              mock_heur, mock_meta, mock_save):
         """Test handling when prompt invocation fails."""
@@ -189,13 +189,13 @@ class TestRunAll:
         assert "ERROR" in results[0]["review"]
         assert "LLM timeout" in results[0]["review"]
 
-    @patch('accuracy_checker.save_text_to_file')
-    @patch('accuracy_checker.meta_evaluate')
-    @patch('accuracy_checker.heuristic_metrics')
-    @patch('accuracy_checker.fetch_pr_diff')
-    @patch('accuracy_checker.get_prompts')
-    @patch('accuracy_checker.llm')
-    @patch('accuracy_checker.parser')
+    @patch('accuracy_checker_refactored.save_text_to_file')
+    @patch('accuracy_checker_refactored.meta_evaluate')
+    @patch('accuracy_checker_refactored.heuristic_metrics')
+    @patch('accuracy_checker_refactored.fetch_pr_diff')
+    @patch('accuracy_checker_refactored.get_prompts')
+    @patch('accuracy_checker_refactored.llm')
+    @patch('accuracy_checker_refactored.parser')
     def test_meta_evaluate_failure_uses_heuristic_only(self, mock_parser, mock_llm, mock_prompts,
                                                        mock_fetch, mock_heur,
                                                        mock_meta, mock_save):
@@ -222,13 +222,13 @@ class TestRunAll:
         assert results[0]["meta_score"] == "N/A"
         assert results[0]["final_score"] == results[0]["heur_score"]
 
-    @patch('accuracy_checker.save_text_to_file')
-    @patch('accuracy_checker.meta_evaluate')
-    @patch('accuracy_checker.heuristic_metrics')
-    @patch('accuracy_checker.fetch_pr_diff')
-    @patch('accuracy_checker.get_prompts')
-    @patch('accuracy_checker.llm')
-    @patch('accuracy_checker.parser')
+    @patch('accuracy_checker_refactored.save_text_to_file')
+    @patch('accuracy_checker_refactored.meta_evaluate')
+    @patch('accuracy_checker_refactored.heuristic_metrics')
+    @patch('accuracy_checker_refactored.fetch_pr_diff')
+    @patch('accuracy_checker_refactored.get_prompts')
+    @patch('accuracy_checker_refactored.llm')
+    @patch('accuracy_checker_refactored.parser')
     def test_successful_meta_uses_weighted_score(self, mock_parser, mock_llm, mock_prompts, mock_fetch,
                                                  mock_heur, mock_meta, mock_save):
         """Test that final score uses 70/30 weighting when meta succeeds."""
@@ -262,16 +262,16 @@ class TestRunAll:
         expected = round(0.7 * 10.0 + 0.3 * results[0]["heur_score"], 2)
         assert results[0]["final_score"] == expected
 
-    @patch('builtins.open', new_callable=mock_open)
-    @patch('accuracy_checker.save_text_to_file')
-    @patch('accuracy_checker.meta_evaluate')
-    @patch('accuracy_checker.heuristic_metrics')
-    @patch('accuracy_checker.fetch_pr_diff')
-    @patch('accuracy_checker.get_prompts')
-    @patch('accuracy_checker.llm')
-    @patch('accuracy_checker.parser')
-    def test_csv_file_generation(self, mock_parser, mock_llm, mock_prompts, mock_fetch, mock_heur,
-                                 mock_meta, mock_save, mock_file):
+    @patch('accuracy_checker_refactored.save_text_to_file')
+    @patch('accuracy_checker_refactored.meta_evaluate')
+    @patch('accuracy_checker_refactored.heuristic_metrics')
+    @patch('accuracy_checker_refactored.fetch_pr_diff')
+    @patch('accuracy_checker_refactored.get_prompts')
+    @patch('accuracy_checker_refactored.llm')
+    @patch('accuracy_checker_refactored.parser')
+    @patch('builtins.open')
+    def test_csv_file_generation(self, mock_file, mock_parser, mock_llm, mock_prompts,
+                                 mock_fetch, mock_heur, mock_meta, mock_save):
         """Test that CSV file is created with correct headers."""
         mock_prompt_obj = Mock()
         mock_prompts.return_value = {"test": mock_prompt_obj}
@@ -282,7 +282,7 @@ class TestRunAll:
             "sections_presence": {}
         }
         mock_meta.return_value = (
-            {"clarity": 7, "usefulness": 7, "depth": 7, 
+            {"clarity": 7, "usefulness": 7, "depth": 7,
              "actionability": 7, "positivity": 7},
             "raw"
         )
@@ -295,18 +295,18 @@ class TestRunAll:
         
         run_all()
         
-        # Check that CSV file was opened for writing
-        csv_calls = [call for call in mock_file.call_args_list 
-                    if 'csv' in str(call)]
+        # --- CHANGED: check save_text_to_file calls instead of open() ---
+        csv_calls = [call for call in mock_save.call_args_list if '.csv' in str(call)]
         assert len(csv_calls) > 0
 
-    @patch('accuracy_checker.save_text_to_file')
-    @patch('accuracy_checker.meta_evaluate')
-    @patch('accuracy_checker.heuristic_metrics')
-    @patch('accuracy_checker.fetch_pr_diff')
-    @patch('accuracy_checker.get_prompts')
-    @patch('accuracy_checker.llm')
-    @patch('accuracy_checker.parser')
+
+    @patch('accuracy_checker_refactored.save_text_to_file')
+    @patch('accuracy_checker_refactored.meta_evaluate')
+    @patch('accuracy_checker_refactored.heuristic_metrics')
+    @patch('accuracy_checker_refactored.fetch_pr_diff')
+    @patch('accuracy_checker_refactored.get_prompts')
+    @patch('accuracy_checker_refactored.llm')
+    @patch('accuracy_checker_refactored.parser')
     def test_markdown_report_generation(self, mock_parser, mock_llm, mock_prompts, mock_fetch,
                                        mock_heur, mock_meta, mock_save):
         """Test that markdown report is generated."""
@@ -337,13 +337,13 @@ class TestRunAll:
                    if '.md' in str(call[0][0])]
         assert len(md_calls) > 0
 
-    @patch('accuracy_checker.save_text_to_file')
-    @patch('accuracy_checker.meta_evaluate')
-    @patch('accuracy_checker.heuristic_metrics')
-    @patch('accuracy_checker.fetch_pr_diff')
-    @patch('accuracy_checker.get_prompts')
-    @patch('accuracy_checker.llm')
-    @patch('accuracy_checker.parser')
+    @patch('accuracy_checker_refactored.save_text_to_file')
+    @patch('accuracy_checker_refactored.meta_evaluate')
+    @patch('accuracy_checker_refactored.heuristic_metrics')
+    @patch('accuracy_checker_refactored.fetch_pr_diff')
+    @patch('accuracy_checker_refactored.get_prompts')
+    @patch('accuracy_checker_refactored.llm')
+    @patch('accuracy_checker_refactored.parser')
     def test_individual_review_files_generated(self, mock_parser, mock_llm, mock_prompts, mock_fetch,
                                               mock_heur, mock_meta, mock_save):
         """Test that individual review files are generated for each prompt."""
@@ -377,13 +377,13 @@ class TestRunAll:
         # Should save: 1 CSV + 1 MD summary + 2 individual reviews = 4 files
         assert mock_save.call_count >= 4
 
-    @patch('accuracy_checker.save_text_to_file')
-    @patch('accuracy_checker.meta_evaluate')
-    @patch('accuracy_checker.heuristic_metrics')
-    @patch('accuracy_checker.fetch_pr_diff')
-    @patch('accuracy_checker.get_prompts')
-    @patch('accuracy_checker.llm')
-    @patch('accuracy_checker.parser')
+    @patch('accuracy_checker_refactored.save_text_to_file')
+    @patch('accuracy_checker_refactored.meta_evaluate')
+    @patch('accuracy_checker_refactored.heuristic_metrics')
+    @patch('accuracy_checker_refactored.fetch_pr_diff')
+    @patch('accuracy_checker_refactored.get_prompts')
+    @patch('accuracy_checker_refactored.llm')
+    @patch('accuracy_checker_refactored.parser')
     def test_diff_truncation_to_4000_chars(self, mock_parser, mock_llm, mock_prompts, mock_fetch,
                                           mock_heur, mock_meta, mock_save):
         """Test that diff is truncated to 4000 chars for prompts."""
@@ -411,14 +411,14 @@ class TestRunAll:
         call_args = mock_chain.invoke.call_args[0][0]
         assert len(call_args["diff"]) == 4000
 
-    @patch('accuracy_checker.time.sleep')
-    @patch('accuracy_checker.save_text_to_file')
-    @patch('accuracy_checker.meta_evaluate')
-    @patch('accuracy_checker.heuristic_metrics')
-    @patch('accuracy_checker.fetch_pr_diff')
-    @patch('accuracy_checker.get_prompts')
-    @patch('accuracy_checker.llm')
-    @patch('accuracy_checker.parser')
+    @patch('accuracy_checker_refactored.time.sleep')
+    @patch('accuracy_checker_refactored.save_text_to_file')
+    @patch('accuracy_checker_refactored.meta_evaluate')
+    @patch('accuracy_checker_refactored.heuristic_metrics')
+    @patch('accuracy_checker_refactored.fetch_pr_diff')
+    @patch('accuracy_checker_refactored.get_prompts')
+    @patch('accuracy_checker_refactored.llm')
+    @patch('accuracy_checker_refactored.parser')
     def test_sleep_between_prompts(self, mock_parser, mock_llm, mock_prompts, mock_fetch, mock_heur,
                                    mock_meta, mock_save, mock_sleep):
         """Test that sleep is called between prompt executions."""
@@ -447,13 +447,13 @@ class TestRunAll:
         assert mock_sleep.call_count >= 1
         mock_sleep.assert_called_with(0.2)
 
-    @patch('accuracy_checker.save_text_to_file')
-    @patch('accuracy_checker.meta_evaluate')
-    @patch('accuracy_checker.heuristic_metrics')
-    @patch('accuracy_checker.fetch_pr_diff')
-    @patch('accuracy_checker.get_prompts')
-    @patch('accuracy_checker.llm')
-    @patch('accuracy_checker.parser')
+    @patch('accuracy_checker_refactored.save_text_to_file')
+    @patch('accuracy_checker_refactored.meta_evaluate')
+    @patch('accuracy_checker_refactored.heuristic_metrics')
+    @patch('accuracy_checker_refactored.fetch_pr_diff')
+    @patch('accuracy_checker_refactored.get_prompts')
+    @patch('accuracy_checker_refactored.llm')
+    @patch('accuracy_checker_refactored.parser')
     def test_post_to_github_parameter_ignored(self, mock_parser, mock_llm, mock_prompts, mock_fetch,
                                              mock_heur, mock_meta, mock_save):
         """Test that post_to_github parameter is accepted but unused."""
@@ -481,13 +481,13 @@ class TestRunAll:
         assert len(results_true) > 0
         assert len(results_false) > 0
 
-    @patch('accuracy_checker.save_text_to_file')
-    @patch('accuracy_checker.meta_evaluate')
-    @patch('accuracy_checker.heuristic_metrics')
-    @patch('accuracy_checker.fetch_pr_diff')
-    @patch('accuracy_checker.get_prompts')
-    @patch('accuracy_checker.llm')
-    @patch('accuracy_checker.parser')
+    @patch('accuracy_checker_refactored.save_text_to_file')
+    @patch('accuracy_checker_refactored.meta_evaluate')
+    @patch('accuracy_checker_refactored.heuristic_metrics')
+    @patch('accuracy_checker_refactored.fetch_pr_diff')
+    @patch('accuracy_checker_refactored.get_prompts')
+    @patch('accuracy_checker_refactored.llm')
+    @patch('accuracy_checker_refactored.parser')
     def test_timing_measurement(self, mock_parser, mock_llm, mock_prompts, mock_fetch,
                                mock_heur, mock_meta, mock_save):
         """Test that execution time is measured for each prompt."""

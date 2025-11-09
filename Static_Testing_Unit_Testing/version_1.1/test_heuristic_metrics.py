@@ -4,7 +4,7 @@ Tests various review text patterns and edge cases.
 """
 
 import pytest
-from accuracy_checker import heuristic_metrics
+from accuracy_checker_refactored import heuristic_metrics
 
 
 class TestHeuristicMetrics:

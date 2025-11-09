@@ -5,7 +5,7 @@ Tests LLM evaluation behavior, error handling, and JSON parsing.
 
 import pytest
 from unittest.mock import Mock, patch, MagicMock
-from accuracy_checker import meta_evaluate
+from accuracy_checker_refactored import meta_evaluate
 
 
 class TestMetaEvaluate:

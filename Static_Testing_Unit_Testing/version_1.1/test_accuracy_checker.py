@@ -5,7 +5,7 @@ Contains critical edge cases and integration tests only.
 
 import pytest
 from unittest.mock import Mock, patch, mock_open
-from accuracy_checker import (
+from accuracy_checker_refactored import (
     heuristic_metrics,
     meta_evaluate,
     heuristics_to_score,

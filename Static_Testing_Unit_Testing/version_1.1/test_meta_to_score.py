@@ -4,7 +4,7 @@ Tests weighted scoring calculation from meta-evaluation results.
 """
 # 21 pass
 import pytest
-from accuracy_checker import meta_to_score
+from accuracy_checker_refactored import meta_to_score
 
 
 class TestMetaToScore:

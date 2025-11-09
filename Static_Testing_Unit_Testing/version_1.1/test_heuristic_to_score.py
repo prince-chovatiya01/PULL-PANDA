@@ -4,7 +4,7 @@ Tests scoring algorithm with various metric combinations.
 """
 # 18 pass
 import pytest
-from accuracy_checker import heuristics_to_score
+from accuracy_checker_refactored import heuristics_to_score
 
 
 class TestHeuristicsToScore:
