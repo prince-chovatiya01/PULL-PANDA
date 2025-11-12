@@ -298,7 +298,7 @@ def process_pr_with_selector(selector: IterativePromptSelector, pr_number: int, 
     # --- MODIFIED: pass static_output and context to save_results ---
     selector.save_results(pr_number, features, chosen, review, score, heur, meta_parsed, static_output, context)
     # ----------------------------------------------------
-     if post_to_github:
+    if post_to_github:
         print(f"Posting review to GitHub PR #{pr_number}...")
         try:
            
@@ -319,4 +319,5 @@ def process_pr_with_selector(selector: IterativePromptSelector, pr_number: int, 
         "score": score,
         "features": features
     }
+
 
