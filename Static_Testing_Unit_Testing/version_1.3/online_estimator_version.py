@@ -14,6 +14,7 @@ from datetime import datetime
 import numpy as np
 from sklearn.linear_model import SGDRegressor
 from sklearn.preprocessing import StandardScaler
+from sklearn.exceptions import NotFittedError
 
 # Local imports
 from reviewer import fetch_pr_diff, save_text_to_file, llm, parser
@@ -123,7 +124,7 @@ class IterativePromptSelector:
         if self.is_scaler_fitted:
             try:
                 scaled_features = self.scaler.transform([features_vector])
-            except (ValueError, AttributeError):
+            except (ValueError, AttributeError, Exception): #pylint: disable=broad-except
                 scaled_features = [features_vector]
         else:
             scaled_features = [features_vector]
@@ -142,7 +143,7 @@ class IterativePromptSelector:
                 if score > best_score:
                     best_score = score
                     best_prompt = prompt_name
-            except (ValueError, AttributeError):
+            except (ValueError, AttributeError, Exception): #pylint: disable=broad-except
                 continue
 
         # Add exploration - sometimes choose random prompt to explore
