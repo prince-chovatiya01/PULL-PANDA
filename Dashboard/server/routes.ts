@@ -103,13 +103,16 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-
   // --------------------------
-  // Pull Requests
+  // Pull Requests (Repo-specific + AI review status)
   // --------------------------
   app.get("/api/pull-requests", async (req: Request, res: Response) => {
     try {
       const octokit = getClient(req);
+
+      const repoFilter = req.query.repo as string | undefined;
+      const ownerFilter = req.query.owner as string | undefined;
+
       const { data: repos } = await octokit.rest.repos.listForAuthenticatedUser({
         per_page: 100
       });
@@ -117,17 +120,33 @@ export async function registerRoutes(app: Express): Promise<void> {
       const allPRs: any[] = [];
 
       for (const repo of repos.slice(0, 20)) {
+
+        // Repo filter — only fetch PRs of selected repo
+        if (repoFilter && repo.name !== repoFilter) continue;
+        if (ownerFilter && repo.owner?.login !== ownerFilter) continue;
+
         try {
           const { data: prs } = await octokit.rest.pulls.list({
             owner: repo.owner!.login,
             repo: repo.name,
             state: "all",
-            per_page: 20,
+            per_page: 50,
             sort: "updated",
             direction: "desc"
           });
 
-          prs.forEach((pr) => {
+          // ⭐ Check AI-reviewed status for each PR
+          for (const pr of prs) {
+            const { data: comments } = await octokit.rest.issues.listComments({
+              owner: repo.owner!.login,
+              repo: repo.name,
+              issue_number: pr.number
+            });
+
+            const aiReviewed = comments.some(c =>
+              c.body?.toLowerCase().includes("ai-powered review")
+            );
+
             allPRs.push({
               id: pr.id,
               number: pr.number,
@@ -140,19 +159,22 @@ export async function registerRoutes(app: Express): Promise<void> {
               repository: repo.name,
               owner: repo.owner!.login,
 
-              // ✅ ADD THESE:
               user: {
                 login: pr.user?.login || "unknown",
-                avatar_url: pr.user?.avatar_url || "",
-              }
+                avatar_url: pr.user?.avatar_url || ""
+              },
+
+              // ⭐ NEW FIELD ADDED
+              aiReviewed
             });
-          });
+          }
 
         } catch (innerErr) {
           console.error(`PR fetch error for repo ${repo.name}:`, innerErr);
         }
       }
 
+      // Sort by latest
       allPRs.sort(
         (a, b) =>
           new Date(b.updated_at).getTime() -
@@ -160,6 +182,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       );
 
       res.json(allPRs);
+
     } catch (error: any) {
       res.status(error.status || 500).json({ error: error.message });
     }

@@ -121,6 +121,7 @@ import Dashboard from "@/pages/Dashboard";
 import PullRequests from "@/pages/PullRequests";
 import Reviews from "@/pages/Reviews";
 import Analytics from "@/pages/Analytics";
+import PRDetails from "@/pages/PRDetails";   // ← NEW PAGE
 import NotFound from "@/pages/not-found";
 import Login from "@/pages/Login";
 
@@ -141,29 +142,36 @@ export default function App() {
             </Route>
 
             {/* PROTECTED ROUTES */}
-            <Route path="/">
+            <Route path="/" component={() => (
               <ProtectedRoute>
                 <Dashboard />
               </ProtectedRoute>
-            </Route>
+            )} />
 
-            <Route path="/pull-requests">
+            <Route path="/pull-requests" component={() => (
               <ProtectedRoute>
                 <PullRequests />
               </ProtectedRoute>
-            </Route>
+            )} />
 
-            <Route path="/reviews">
+            {/* NEW: PR DETAILS ROUTE */}
+            <Route path="/pr-details" component={() => (
+              <ProtectedRoute>
+                <PRDetails />
+              </ProtectedRoute>
+            )} />
+
+            <Route path="/reviews" component={() => (
               <ProtectedRoute>
                 <Reviews />
               </ProtectedRoute>
-            </Route>
+            )} />
 
-            <Route path="/analytics">
+            <Route path="/analytics" component={() => (
               <ProtectedRoute>
                 <Analytics />
               </ProtectedRoute>
-            </Route>
+            )} />
 
             {/* 404 */}
             <Route>

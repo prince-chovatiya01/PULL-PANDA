@@ -69,9 +69,9 @@
 // export default router;
 
 
-// SWE_project_website\server\auth.ts
+// SWE_project_website/server/auth.ts
 import dotenv from "dotenv";
-dotenv.config();  // MUST be first
+dotenv.config(); // MUST be first
 
 import express, { Request, Response } from "express";
 import axios from "axios";
@@ -86,31 +86,35 @@ declare module "express-session" {
 
 const router = express.Router();
 
-console.log("AUTH ENV TEST (auth.ts):", process.env.GITHUB_CLIENT_ID, process.env.GITHUB_REDIRECT_URI);
+console.log("AUTH ENV TEST:", process.env.GITHUB_CLIENT_ID, process.env.GITHUB_REDIRECT_URI);
 
-// Redirect user to GitHub OAuth
+/* ------------------------------------------------------
+   STEP 1 — LOGIN ROUTE
+   Forces GitHub to prompt login + consent every time.
+-------------------------------------------------------- */
 router.get("/github", (_req: Request, res: Response) => {
   const CLIENT_ID = process.env.GITHUB_CLIENT_ID;
   const REDIRECT_URI = process.env.GITHUB_REDIRECT_URI;
 
-  // 💡 NEW: Guard clause to check for missing ENV variables
   if (!CLIENT_ID || !REDIRECT_URI) {
-    console.error("CRITICAL: GITHUB_CLIENT_ID or GITHUB_REDIRECT_URI is missing.");
-    // Respond with a 500 error if configuration is missing
-    return res.status(500).send("Server configuration error: Missing GitHub credentials.");
+    return res.status(500).send("GitHub OAuth is not configured.");
   }
-  
-  console.log("AUTH /github → ENV:", CLIENT_ID, REDIRECT_URI);
 
-  const url =
+  const authUrl =
     `https://github.com/login/oauth/authorize` +
-    `?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
-    `&scope=repo,user`; // Added necessary scopes for PR review
+    `?client_id=${CLIENT_ID}` +
+    `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
+    `&scope=repo,user` +
+    `&prompt=consent` +
+    `&force_verify=true`;  // <--- THE KEY FIX
 
-  res.redirect(url);
+  res.redirect(authUrl);
 });
 
-// GitHub redirects here with "code"
+/* ------------------------------------------------------
+   STEP 2 — CALLBACK ROUTE
+   GitHub sends ?code=XYZ → we exchange it for access token
+-------------------------------------------------------- */
 router.get("/github/callback", async (req: Request, res: Response) => {
   const CLIENT_ID = process.env.GITHUB_CLIENT_ID;
   const CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
@@ -118,66 +122,82 @@ router.get("/github/callback", async (req: Request, res: Response) => {
   const FRONTEND_URL = process.env.FRONTEND_URL;
 
   if (!CLIENT_ID || !CLIENT_SECRET || !REDIRECT_URI || !FRONTEND_URL) {
-    console.error("CRITICAL: One or more OAuth ENV variables are missing in callback.");
-    return res.status(500).send("Server configuration error: Incomplete OAuth setup.");
+    console.error("❌ Missing OAuth ENV vars in callback");
+    return res.status(500).send("OAuth configuration incomplete.");
   }
-  
-  console.log("AUTH CALLBACK ENV:", CLIENT_ID, REDIRECT_URI, FRONTEND_URL);
 
   const code = req.query.code as string;
+
   if (!code) {
-    // Check if GitHub returned an error instead of a code
-    const githubError = req.query.error;
-    if (githubError) {
-      console.error(`GitHub Auth Error: ${githubError}`);
-      return res.status(400).send(`GitHub Auth Error: ${githubError}`);
-    }
-    return res.status(400).send("Code missing");
+    console.error("❌ OAuth Callback Error: Missing code");
+    return res.status(400).send("Missing 'code' parameter from GitHub OAuth.");
   }
 
   try {
-    const tokenRes = await axios.post(
+    const tokenResponse = await axios.post(
       "https://github.com/login/oauth/access_token",
       {
         client_id: CLIENT_ID,
         client_secret: CLIENT_SECRET,
         code,
-        redirect_uri: REDIRECT_URI,
+        redirect_uri: REDIRECT_URI
       },
       { headers: { Accept: "application/json" } }
     );
 
-    const accessToken = tokenRes.data.access_token;
+    const accessToken = tokenResponse.data.access_token;
+
     if (!accessToken) {
-      console.error("GitHub access token exchange failed.", tokenRes.data);
-      return res.status(401).send("No access token or token exchange failed.");
+      console.error("❌ Failed to exchange OAuth code:", tokenResponse.data);
+      return res.status(401).send("GitHub OAuth token exchange failed.");
     }
 
+    // Save token in session
     req.session.accessToken = accessToken;
 
-    // 💡 Refinement: Ensure we redirect to the specific frontend URL, not just the path
-    res.redirect(FRONTEND_URL); 
+    console.log("✔ OAuth success — redirecting to frontend:", FRONTEND_URL);
+    return res.redirect(FRONTEND_URL);
+
   } catch (err) {
-    console.error("Auth failed during token exchange:", err);
-    res.status(500).send("Auth failed");
+    console.error("❌ OAuth callback exchange failed:", err);
+    return res.status(500).send("GitHub OAuth failed during token exchange.");
   }
 });
 
-// Get logged-in user info
+/* ------------------------------------------------------
+   STEP 3 — CHECK AUTH STATE
+   Used by ProtectedRoute (frontend)
+-------------------------------------------------------- */
 router.get("/me", async (req: Request, res: Response) => {
-  if (!req.session.accessToken)
+  if (!req.session.accessToken) {
     return res.status(401).json({ error: "Not authenticated" });
+  }
 
   try {
     const octokit = new Octokit({ auth: req.session.accessToken });
     const { data: user } = await octokit.rest.users.getAuthenticated();
-    res.json(user);
+    return res.json(user);
+
   } catch (err) {
-    console.error("Octokit failed to get user info:", err);
-    // Clearing session if Octokit fails, forcing re-login
-    delete req.session.accessToken; 
+    console.error("❌ Token invalid — clearing session:", err);
+    delete req.session.accessToken;
     return res.status(401).json({ error: "Token invalid, please log in again." });
   }
+});
+
+/* ------------------------------------------------------
+   STEP 4 — LOGOUT
+-------------------------------------------------------- */
+router.post("/logout", (req: Request, res: Response) => {
+  req.session.destroy(() => {
+    res.clearCookie("connect.sid", {
+      path: "/",
+      sameSite: "none",
+      secure: false
+    });
+    console.log("✔ Logged out successfully.");
+    return res.json({ message: "Logged out" });
+  });
 });
 
 export default router;

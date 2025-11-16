@@ -1,3 +1,4 @@
+// SWE_project_website/client/src/pages/Dashboard.tsx
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { StatsCard } from "@/components/StatsCard";
@@ -6,7 +7,13 @@ import { SearchBar } from "@/components/SearchBar";
 import { ErrorState } from "@/components/ErrorState";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { GitPullRequest, CheckCircle2, Clock, FolderGit2, RefreshCw } from "lucide-react";
+import {
+  GitPullRequest,
+  CheckCircle2,
+  Clock,
+  FolderGit2,
+  RefreshCw
+} from "lucide-react";
 import { useLocation } from "wouter";
 import { queryClient } from "@/lib/queryClient";
 import type { Repository, Stats } from "@/lib/api";
@@ -15,44 +22,46 @@ export default function Dashboard() {
   const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
 
-  // const { data: repos, isLoading: reposLoading, error: reposError, isRefetching: reposRefetching } = useQuery<Repository[]>({
-  //   queryKey: ['/api/repositories'],
-  // });
-
-  // const { data: stats, isLoading: statsLoading, error: statsError, isRefetching: statsRefetching } = useQuery<Stats>({
-  //   queryKey: ['/api/stats'],
-  // });
-
   // Fetch repositories
-  const { data: repos, isLoading: reposLoading, error: reposError, isRefetching: reposRefetching } =
-    useQuery<Repository[]>({
-      queryKey: ['/api/repositories'],
-      queryFn: async () => {
-        const res = await fetch("http://localhost:5000/api/repositories", {
-          credentials: "include",
-        });
-        if (!res.ok) throw new Error("Failed to fetch repositories");
-        return res.json();
-      },
-    });
+  const {
+    data: repos,
+    isLoading: reposLoading,
+    error: reposError,
+    isRefetching: reposRefetching
+  } = useQuery<Repository[]>({
+    queryKey: ['/api/repositories'],
+    queryFn: async () => {
+      const res = await fetch("http://localhost:5000/api/repositories", {
+        credentials: "include"
+      });
+      if (!res.ok) throw new Error("Failed to fetch repositories");
+      return res.json();
+    }
+  });
 
   // Fetch stats
-  const { data: stats, isLoading: statsLoading, error: statsError, isRefetching: statsRefetching } =
-    useQuery<Stats>({
-      queryKey: ['/api/stats'],
-      queryFn: async () => {
-        const res = await fetch("http://localhost:5000/api/stats", {
-          credentials: "include",
-        });
-        if (!res.ok) throw new Error("Failed to fetch stats");
-        return res.json();
-      },
-    });
+  const {
+    data: stats,
+    isLoading: statsLoading,
+    error: statsError,
+    isRefetching: statsRefetching
+  } = useQuery<Stats>({
+    queryKey: ['/api/stats'],
+    queryFn: async () => {
+      const res = await fetch("http://localhost:5000/api/stats", {
+        credentials: "include"
+      });
+      if (!res.ok) throw new Error("Failed to fetch stats");
+      return res.json();
+    }
+  });
 
-  const filteredRepos = repos?.filter(repo =>
-    repo.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    repo.description?.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || [];
+  const filteredRepos =
+    repos?.filter(
+      (repo) =>
+        repo.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        repo.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    ) || [];
 
   const isRefreshing = reposRefetching || statsRefetching;
 
@@ -65,24 +74,36 @@ export default function Dashboard() {
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-auto">
         <div className="max-w-7xl mx-auto p-6 space-y-6">
+
+          {/* ──────────────────────────── */}
+          {/* HEADER WITHOUT LOGOUT NOW   */}
+          {/* ──────────────────────────── */}
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
-              <h1 className="text-2xl font-semibold text-foreground">My Repositories</h1>
+              <h1 className="text-2xl font-semibold text-foreground">
+                My Repositories
+              </h1>
               <p className="text-sm text-muted-foreground mt-1">
                 Overview of your repositories and AI review activity
               </p>
             </div>
+
             <Button
               variant="outline"
               onClick={handleRefresh}
               disabled={isRefreshing}
               data-testid="button-refresh"
             >
-              <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw
+                className={`h-4 w-4 mr-2 ${
+                  isRefreshing ? "animate-spin" : ""
+                }`}
+              />
               Refresh
             </Button>
           </div>
 
+          {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {statsLoading ? (
               <>
@@ -120,6 +141,7 @@ export default function Dashboard() {
             ) : null}
           </div>
 
+          {/* Search Bar */}
           <div className="flex items-center gap-4">
             <SearchBar
               value={searchQuery}
@@ -128,6 +150,7 @@ export default function Dashboard() {
             />
           </div>
 
+          {/* Repo List */}
           {reposError ? (
             <ErrorState
               title="Failed to load repositories"
@@ -152,9 +175,9 @@ export default function Dashboard() {
                   openPRs={repo.open_prs_count}
                   language={repo.language || undefined}
                   isPrivate={repo.private}
-                  onClick={() => {
-                    setLocation(`/pull-requests?repo=${repo.name}&owner=${repo.owner}`);
-                  }}
+                  onClick={() =>
+                    setLocation(`/pull-requests?repo=${repo.name}&owner=${repo.owner}`)
+                  }
                 />
               ))}
             </div>
@@ -163,7 +186,9 @@ export default function Dashboard() {
           {!reposLoading && !reposError && filteredRepos.length === 0 && (
             <div className="text-center py-12">
               <p className="text-muted-foreground">
-                {searchQuery ? "No repositories found" : "No repositories available"}
+                {searchQuery
+                  ? "No repositories found"
+                  : "No repositories available"}
               </p>
             </div>
           )}

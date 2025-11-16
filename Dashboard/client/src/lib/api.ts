@@ -21,17 +21,22 @@ export interface PullRequest {
   id: number;
   number: number;
   title: string;
-  state: 'open' | 'closed' | 'merged';
+  state: "open" | "closed";
   merged: boolean;
   html_url: string;
   created_at: string;
   updated_at: string;
+
+  repository: string;
+  owner: string;
+
   user: {
     login: string;
     avatar_url: string;
   };
-  repository: string;
-  owner: string;
+
+  /** NEW FIELD — added for AI review status */
+  aiReviewed: boolean;
 }
 
 export interface GitHubUser {
