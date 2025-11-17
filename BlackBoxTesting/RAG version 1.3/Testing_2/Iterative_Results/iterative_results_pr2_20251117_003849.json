@@ -1,0 +1,51 @@
+{
+  "timestamp": "20251117_003849",
+  "pr_number": 2,
+  "selected_prompt": "Zero-shot",
+  "review_score": 7.15,
+  "features": {
+    "num_lines": 60,
+    "num_files": 2,
+    "additions": 49,
+    "deletions": 2,
+    "net_changes": 47,
+    "has_comments": 0,
+    "has_functions": 1,
+    "has_imports": 0,
+    "has_test": 1,
+    "has_docs": 0,
+    "has_config": 0,
+    "is_python": 0,
+    "is_js": 0,
+    "is_java": 0
+  },
+  "heuristics": {
+    "length_chars": 4309,
+    "length_words": 571,
+    "bullet_points": 0,
+    "mentions_bug": true,
+    "mentions_suggest": false,
+    "sections_presence": {
+      "summary": false,
+      "bugs": true,
+      "errors": false,
+      "code quality": false,
+      "suggestions": true,
+      "improvements": false,
+      "tests": true,
+      "positive": false,
+      "final review": false
+    }
+  },
+  "meta_evaluation": {
+    "clarity": 8,
+    "usefulness": 9,
+    "depth": 9,
+    "actionability": 8,
+    "positivity": 6,
+    "explain": "The review is thorough and provides actionable suggestions, but could be more concise and focused on the most critical issues, with a more positive tone to encourage improvement."
+  },
+  "training_samples": 39,
+  "static_output": "=== \ud83d\udd0d Targeted Static Analysis for PYTHON (2 files changed) ===\n\n| \ud83e\udde9 Pylint:\n```\n************* Module test_file.py\ntest_file.py:1:0: F0001: No module named test_file.py (fatal)\n************* Module tiny_test.py\ntiny_test.py:1:0: F0001: No module named tiny_test.py (fatal)\n```\n\n| \ud83c\udfaf Flake8:\n```\ntest_file.py:0:1: E902 FileNotFoundError: [Errno 2] No such file or directory: 'test_file.py'\ntiny_test.py:0:1: E902 FileNotFoundError: [Errno 2] No such file or directory: 'tiny_test.py'\n```\n\n| \ud83d\udd12 Bandit:\n```\nRun started:2025-11-16 19:08:45.957053\n\nTest results:\n\tNo issues identified.\n\nCode scanned:\n\tTotal lines of code: 0\n\tTotal lines skipped (#nosec): 0\n\tTotal potential issues skipped due to specifically being disabled (e.g., #nosec BXXX): 0\n\nRun metrics:\n\tTotal issues (by severity):\n\t\tUndefined: 0\n\t\tLow: 0\n\t\tMedium: 0\n\t\tHigh: 0\n\tTotal issues (by confidence):\n\t\tUndefined: 0\n\t\tLow: 0\n\t\tMedium: 0\n\t\tHigh: 0\nFiles skipped (2):\n\t.\\test_file.py (No such file or directory)\n\t.\\tiny_test.py (No such file or directory)\n```\n\n| \ud83e\udde0 Mypy:\n```\nmypy: can't read file 'test_file.py': No such file or directory\n```",
+  "retrieved_context": "# Our Engineering Coding Standards\n\n## Python\n- All functions must have type hints.\n- Use `black` for formatting.\n- All public functions must have a docstring explaining args, returns, and raises.\n- Avoid global variables. Pass state explicitly.\n\n## General\n- PRs should be small and focused.\n- Always include unit tests for new logic.\n- Do not commit secrets. Use .env files."
+}
