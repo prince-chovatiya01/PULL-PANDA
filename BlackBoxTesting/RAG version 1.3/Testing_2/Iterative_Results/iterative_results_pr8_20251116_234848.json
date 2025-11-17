@@ -1,0 +1,51 @@
+{
+  "timestamp": "20251116_234848",
+  "pr_number": 8,
+  "selected_prompt": "Zero-shot",
+  "review_score": 8.84,
+  "features": {
+    "num_lines": 1,
+    "num_files": 0,
+    "additions": 0,
+    "deletions": 0,
+    "net_changes": 0,
+    "has_comments": 0,
+    "has_functions": 0,
+    "has_imports": 0,
+    "has_test": 0,
+    "has_docs": 0,
+    "has_config": 0,
+    "is_python": 0,
+    "is_js": 0,
+    "is_java": 0
+  },
+  "heuristics": {
+    "length_chars": 2060,
+    "length_words": 343,
+    "bullet_points": 11,
+    "mentions_bug": true,
+    "mentions_suggest": true,
+    "sections_presence": {
+      "summary": false,
+      "bugs": true,
+      "errors": false,
+      "code quality": false,
+      "suggestions": true,
+      "improvements": false,
+      "tests": true,
+      "positive": false,
+      "final review": false
+    }
+  },
+  "meta_evaluation": {
+    "clarity": 9,
+    "usefulness": 10,
+    "depth": 9,
+    "actionability": 10,
+    "positivity": 8,
+    "explain": "The review is thorough and provides actionable suggestions, but could be more concise and positive in its tone, focusing on helping the developer improve the PR rather than just listing issues."
+  },
+  "training_samples": 26,
+  "static_output": "\u26a0\ufe0f No recognizable programming language files found in PR diff to analyze.",
+  "retrieved_context": "# Our Engineering Coding Standards\n\n## Python\n- All functions must have type hints.\n- Use `black` for formatting.\n- All public functions must have a docstring explaining args, returns, and raises.\n- Avoid global variables. Pass state explicitly.\n\n## General\n- PRs should be small and focused.\n- Always include unit tests for new logic.\n- Do not commit secrets. Use .env files."
+}
