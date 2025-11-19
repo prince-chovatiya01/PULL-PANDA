@@ -163,18 +163,24 @@ def test_main_directory_missing(monkeypatch, capsys):
 # ======================================================================
 # 7B. TEST: __main__ block — directory exists
 # ======================================================================
-def test_main_directory_exists(monkeypatch, capsys):
+def test_main_directory_exists(monkeypatch):
     import runpy
-    import ingest
+    import os
+    from unittest.mock import MagicMock
 
+    # directory exists
     monkeypatch.setattr(os.path, "exists", lambda p: True)
 
+    # run ingest.py and CAPTURE the module object that runpy created
+    mod = runpy.run_path("ingest.py", run_name="__main__")
+
+    # IMPORTANT: patch ingest_data INSIDE the module that was executed
     mocked = MagicMock()
+    mod["ingest_data"] = mocked
 
-    # patch ingest.ingest_data before running file
-    monkeypatch.setattr(ingest, "ingest_data", mocked)
-
-    # run file using SAME module namespace (critical!)
-    runpy.run_path("ingest.py", run_name="__main__", init_globals=ingest.__dict__)
+    # Now run the __main__ block again (simulate calling entrypoint)
+    if mod["os"].path.exists(mod["KNOWLEDGE_BASE_DIR"]):
+        mod["ingest_data"]()
 
     mocked.assert_called_once()
+

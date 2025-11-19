@@ -68,7 +68,7 @@ def get_changed_files_and_languages(diff_text: str) -> Dict[str, List[str]]:
         ext = path.split(".")[-1].lower()
         lang = FILE_LANG_MAP.get(ext)
         if lang:
-            changed_files.setdefault(lang, []).append(path)
+            changed_files.setdefault(lang, []).append(path.lower())
 
     return changed_files
 

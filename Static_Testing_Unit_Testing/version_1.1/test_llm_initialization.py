@@ -5,7 +5,7 @@ Tests ChatGroq and parser configuration.
 
 import pytest
 from unittest.mock import patch, Mock, MagicMock
-from langchain.schema.output_parser import StrOutputParser
+from langchain_core.output_parsers import StrOutputParser
 import sys
 
 

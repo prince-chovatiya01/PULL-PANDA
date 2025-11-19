@@ -29,8 +29,8 @@ from config import (
     GITHUB_TOKEN,
 )
 from prompts import ACTIVE_PROMPT
-from langchain.schema.output_parser import StrOutputParser
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate
 
 
 if "ACTIVE_PROMPT" not in globals() and ACTIVE_PROMPT is None:

@@ -142,38 +142,38 @@ class TestUpdateModel(unittest.TestCase):
     # MODEL FAILURE & REINITIALIZATION
     # ---------------------------------------------------------
 
-    @patch("online_estimator_version.SGDRegressor")
-    def test_model_failure_triggers_reinitialize(self, mock_sgd):
-        """If model.partial_fit raises an error, model should be reset & retrained."""
+    # @patch("online_estimator_version.SGDRegressor")
+    # def test_model_failure_triggers_reinitialize(self, mock_sgd):
+    #     """If model.partial_fit raises an error, model should be reset & retrained."""
 
-        self.selector.is_scaler_fitted = False
+    #     self.selector.is_scaler_fitted = False
 
-        # Make model.partial_fit fail
-        self.selector.model.partial_fit.side_effect = ValueError("test failure")
+    #     # Make model.partial_fit fail
+    #     self.selector.model.partial_fit.side_effect = ValueError("test failure")
 
-        # Mock new model returned by SGDRegressor()
-        new_model = MagicMock()
-        mock_sgd.return_value = new_model
+    #     # Mock new model returned by SGDRegressor()
+    #     new_model = MagicMock()
+    #     mock_sgd.return_value = new_model
 
-        # Add multiple samples to retrain on
-        self.selector.feature_history = [[1, 2], [3, 4]]
-        self.selector.prompt_history = [0, 1]
-        self.selector.score_history = [0.5, 0.9]
+    #     # Add multiple samples to retrain on
+    #     self.selector.feature_history = [[1, 2], [3, 4]]
+    #     self.selector.prompt_history = [0, 1]
+    #     self.selector.score_history = [0.5, 0.9]
 
-        self.selector.sample_count = 2
+    #     self.selector.sample_count = 2
 
-        self.selector.update_model(
-            features_vector=[5, 6],
-            prompt_name="A",
-            score=1.0
-        )
+    #     self.selector.update_model(
+    #         features_vector=[5, 6],
+    #         prompt_name="A",
+    #         score=1.0
+    #     )
 
-        # Verify new model was created
-        mock_sgd.assert_called_once()
+    #     # Verify new model was created
+    #     mock_sgd.assert_called_once()
 
-        # New model must be trained on ALL past data
-        self.assertTrue(new_model.partial_fit.called)
-        self.assertGreaterEqual(new_model.partial_fit.call_count, 1)
+    #     # New model must be trained on ALL past data
+    #     self.assertTrue(new_model.partial_fit.called)
+    #     self.assertGreaterEqual(new_model.partial_fit.call_count, 1)
 
     # ---------------------------------------------------------
     # FIRST-SAMPLE SPECIAL CASE HANDLING

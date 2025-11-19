@@ -1,5 +1,5 @@
 """
-Combined test suite for accuracy_checker module.
+Combined test suite for accuracy_checker_refactored module.
 Contains critical edge cases and integration tests only.
 """
 
@@ -65,9 +65,9 @@ class TestMetaEvaluateEdgeCases:
         {"clarity": 9, "usefulness": 8, "depth": 7, "actionability": 8, "positivity": 6, "explain": "excellent"}
         This completes the evaluation.'''
         
-        with patch('accuracy_checker.evaluator_prompt') as mock_prompt, \
-             patch('accuracy_checker.llm') as mock_llm, \
-             patch('accuracy_checker.StrOutputParser') as mock_parser:
+        with patch('accuracy_checker_refactored.evaluator_prompt') as mock_prompt, \
+             patch('accuracy_checker_refactored.llm') as mock_llm, \
+             patch('accuracy_checker_refactored.StrOutputParser') as mock_parser:
             
             mock_chain = Mock()
             mock_chain.invoke.return_value = response
@@ -86,9 +86,9 @@ class TestMetaEvaluateEdgeCases:
         """Test handling of malformed JSON response."""
         response = '{"clarity": 8, missing quote}'
         
-        with patch('accuracy_checker.evaluator_prompt') as mock_prompt, \
-             patch('accuracy_checker.llm') as mock_llm, \
-             patch('accuracy_checker.StrOutputParser') as mock_parser:
+        with patch('accuracy_checker_refactored.evaluator_prompt') as mock_prompt, \
+             patch('accuracy_checker_refactored.llm') as mock_llm, \
+             patch('accuracy_checker_refactored.StrOutputParser') as mock_parser:
             
             mock_chain = Mock()
             mock_chain.invoke.return_value = response
@@ -105,9 +105,9 @@ class TestMetaEvaluateEdgeCases:
         """Test response with no JSON at all."""
         response = "This is just plain text."
         
-        with patch('accuracy_checker.evaluator_prompt') as mock_prompt, \
-             patch('accuracy_checker.llm') as mock_llm, \
-             patch('accuracy_checker.StrOutputParser') as mock_parser:
+        with patch('accuracy_checker_refactored.evaluator_prompt') as mock_prompt, \
+             patch('accuracy_checker_refactored.llm') as mock_llm, \
+             patch('accuracy_checker_refactored.StrOutputParser') as mock_parser:
             
             mock_chain = Mock()
             mock_chain.invoke.return_value = response
@@ -123,9 +123,9 @@ class TestMetaEvaluateEdgeCases:
 
     def test_llm_invocation_exception(self):
         """Test handling of LLM invocation failure."""
-        with patch('accuracy_checker.evaluator_prompt') as mock_prompt, \
-             patch('accuracy_checker.llm') as mock_llm, \
-             patch('accuracy_checker.StrOutputParser') as mock_parser:
+        with patch('accuracy_checker_refactored.evaluator_prompt') as mock_prompt, \
+             patch('accuracy_checker_refactored.llm') as mock_llm, \
+             patch('accuracy_checker_refactored.StrOutputParser') as mock_parser:
             
             mock_chain = Mock()
             mock_chain.invoke.side_effect = Exception("API rate limit exceeded")
@@ -144,9 +144,9 @@ class TestMetaEvaluateEdgeCases:
         """Test that diff is properly truncated to 4000 chars."""
         json_response = '{"clarity": 5, "usefulness": 5, "depth": 5, "actionability": 5, "positivity": 5, "explain": "ok"}'
         
-        with patch('accuracy_checker.evaluator_prompt') as mock_prompt, \
-             patch('accuracy_checker.llm') as mock_llm, \
-             patch('accuracy_checker.StrOutputParser') as mock_parser:
+        with patch('accuracy_checker_refactored.evaluator_prompt') as mock_prompt, \
+             patch('accuracy_checker_refactored.llm') as mock_llm, \
+             patch('accuracy_checker_refactored.StrOutputParser') as mock_parser:
             
             mock_chain = Mock()
             mock_chain.invoke.return_value = json_response
@@ -166,9 +166,9 @@ class TestMetaEvaluateEdgeCases:
         """Test JSON missing some required fields."""
         json_response = '{"clarity": 7, "usefulness": 8, "explain": "incomplete"}'
         
-        with patch('accuracy_checker.evaluator_prompt') as mock_prompt, \
-             patch('accuracy_checker.llm') as mock_llm, \
-             patch('accuracy_checker.StrOutputParser') as mock_parser:
+        with patch('accuracy_checker_refactored.evaluator_prompt') as mock_prompt, \
+             patch('accuracy_checker_refactored.llm') as mock_llm, \
+             patch('accuracy_checker_refactored.StrOutputParser') as mock_parser:
             
             mock_chain = Mock()
             mock_chain.invoke.return_value = json_response
@@ -190,9 +190,9 @@ class TestMetaEvaluateEdgeCases:
             "explain": "Good review! 👍 很好"
         }'''
         
-        with patch('accuracy_checker.evaluator_prompt') as mock_prompt, \
-             patch('accuracy_checker.llm') as mock_llm, \
-             patch('accuracy_checker.StrOutputParser') as mock_parser:
+        with patch('accuracy_checker_refactored.evaluator_prompt') as mock_prompt, \
+             patch('accuracy_checker_refactored.llm') as mock_llm, \
+             patch('accuracy_checker_refactored.StrOutputParser') as mock_parser:
             
             mock_chain = Mock()
             mock_chain.invoke.return_value = json_response
@@ -396,11 +396,11 @@ class TestMetaToScoreEdgeCases:
 class TestRunAllEdgeCases:
     """Critical edge cases for run_all integration."""
 
-    @patch('accuracy_checker.save_text_to_file')
-    @patch('accuracy_checker.meta_evaluate')
-    @patch('accuracy_checker.heuristic_metrics')
-    @patch('accuracy_checker.fetch_pr_diff')
-    @patch('accuracy_checker.get_prompts')
+    @patch('accuracy_checker_refactored.save_text_to_file')
+    @patch('accuracy_checker_refactored.meta_evaluate')
+    @patch('accuracy_checker_refactored.heuristic_metrics')
+    @patch('accuracy_checker_refactored.fetch_pr_diff')
+    @patch('accuracy_checker_refactored.get_prompts')
     def test_multiple_prompts_sorted_by_score(self, mock_prompts, mock_fetch,
                                               mock_heur, mock_meta, mock_save):
         """Test that results are sorted by final score ascending."""
@@ -436,11 +436,11 @@ class TestRunAllEdgeCases:
         scores = [r["final_score"] for r in results]
         assert scores == sorted(scores)
 
-    @patch('accuracy_checker.save_text_to_file')
-    @patch('accuracy_checker.meta_evaluate')
-    @patch('accuracy_checker.heuristic_metrics')
-    @patch('accuracy_checker.fetch_pr_diff')
-    @patch('accuracy_checker.get_prompts')
+    @patch('accuracy_checker_refactored.save_text_to_file')
+    @patch('accuracy_checker_refactored.meta_evaluate')
+    @patch('accuracy_checker_refactored.heuristic_metrics')
+    @patch('accuracy_checker_refactored.fetch_pr_diff')
+    @patch('accuracy_checker_refactored.get_prompts')
     def test_prompt_invoke_exception_handling(self, mock_prompts, mock_fetch,
                                              mock_heur, mock_meta, mock_save):
         """Test handling when prompt invocation fails."""
@@ -460,11 +460,11 @@ class TestRunAllEdgeCases:
         assert "ERROR" in results[0]["review"]
         assert "timeout" in results[0]["review"].lower()
 
-    @patch('accuracy_checker.save_text_to_file')
-    @patch('accuracy_checker.meta_evaluate')
-    @patch('accuracy_checker.heuristic_metrics')
-    @patch('accuracy_checker.fetch_pr_diff')
-    @patch('accuracy_checker.get_prompts')
+    @patch('accuracy_checker_refactored.save_text_to_file')
+    @patch('accuracy_checker_refactored.meta_evaluate')
+    @patch('accuracy_checker_refactored.heuristic_metrics')
+    @patch('accuracy_checker_refactored.fetch_pr_diff')
+    @patch('accuracy_checker_refactored.get_prompts')
     def test_meta_failure_uses_heuristic_only(self, mock_prompts, mock_fetch,
                                               mock_heur, mock_meta, mock_save):
         """Test that final score uses only heuristic when meta fails."""
@@ -484,11 +484,11 @@ class TestRunAllEdgeCases:
         assert results[0]["meta_score"] == "N/A"
         assert results[0]["final_score"] == results[0]["heur_score"]
 
-    @patch('accuracy_checker.save_text_to_file')
-    @patch('accuracy_checker.meta_evaluate')
-    @patch('accuracy_checker.heuristic_metrics')
-    @patch('accuracy_checker.fetch_pr_diff')
-    @patch('accuracy_checker.get_prompts')
+    @patch('accuracy_checker_refactored.save_text_to_file')
+    @patch('accuracy_checker_refactored.meta_evaluate')
+    @patch('accuracy_checker_refactored.heuristic_metrics')
+    @patch('accuracy_checker_refactored.fetch_pr_diff')
+    @patch('accuracy_checker_refactored.get_prompts')
     def test_weighted_score_calculation(self, mock_prompts, mock_fetch,
                                        mock_heur, mock_meta, mock_save):
         """Test 70/30 weighted scoring when meta succeeds."""
@@ -510,11 +510,11 @@ class TestRunAllEdgeCases:
         expected = round(0.7 * 10.0 + 0.3 * results[0]["heur_score"], 2)
         assert results[0]["final_score"] == expected
 
-    @patch('accuracy_checker.save_text_to_file')
-    @patch('accuracy_checker.meta_evaluate')
-    @patch('accuracy_checker.heuristic_metrics')
-    @patch('accuracy_checker.fetch_pr_diff')
-    @patch('accuracy_checker.get_prompts')
+    @patch('accuracy_checker_refactored.save_text_to_file')
+    @patch('accuracy_checker_refactored.meta_evaluate')
+    @patch('accuracy_checker_refactored.heuristic_metrics')
+    @patch('accuracy_checker_refactored.fetch_pr_diff')
+    @patch('accuracy_checker_refactored.get_prompts')
     def test_diff_truncation(self, mock_prompts, mock_fetch, mock_heur,
                             mock_meta, mock_save):
         """Test that diff is truncated to 4000 chars."""
@@ -534,12 +534,12 @@ class TestRunAllEdgeCases:
         call_args = mock_chain.invoke.call_args[0][0]
         assert len(call_args["diff"]) == 4000
 
-    @patch('accuracy_checker.time.sleep')
-    @patch('accuracy_checker.save_text_to_file')
-    @patch('accuracy_checker.meta_evaluate')
-    @patch('accuracy_checker.heuristic_metrics')
-    @patch('accuracy_checker.fetch_pr_diff')
-    @patch('accuracy_checker.get_prompts')
+    @patch('accuracy_checker_refactored.time.sleep')
+    @patch('accuracy_checker_refactored.save_text_to_file')
+    @patch('accuracy_checker_refactored.meta_evaluate')
+    @patch('accuracy_checker_refactored.heuristic_metrics')
+    @patch('accuracy_checker_refactored.fetch_pr_diff')
+    @patch('accuracy_checker_refactored.get_prompts')
     def test_sleep_between_prompts(self, mock_prompts, mock_fetch, mock_heur,
                                    mock_meta, mock_save, mock_sleep):
         """Test that sleep is called between prompt executions."""

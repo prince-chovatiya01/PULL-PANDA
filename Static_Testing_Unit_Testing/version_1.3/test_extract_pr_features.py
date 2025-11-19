@@ -1,133 +1,150 @@
 """
-Test suite for extract_pr_features method.
-Tests feature extraction from PR diffs.
+Updated test suite for extract_pr_features method.
+
+Matches the structure of TestProcessPR:
+- unittest.TestCase
+- setUp() with patched get_prompts
+- self.selector used everywhere
 """
 
-import pytest
 import unittest
-from unittest.mock import Mock, patch, MagicMock, mock_open
+from unittest.mock import patch
 from online_estimator_version import IterativePromptSelector
 
 
-class TestExtractPRFeatures:
+class TestExtractPRFeatures(unittest.TestCase):
     """Tests for extract_pr_features method."""
-    
-    def test_basic_diff_features(self, selector_instance):
-        """Test feature extraction from basic diff."""
+
+    def setUp(self):
+        # Match EXACT structure used across all test files
+        with patch("online_estimator_version.get_prompts"):
+            self.selector = IterativePromptSelector()
+
+    # ============================================================
+    # BASIC DIFF FEATURES
+    # ============================================================
+    def test_basic_diff_features(self):
         diff = "diff --git a/file.py b/file.py\n+added line\n-removed line"
-        features = selector_instance.extract_pr_features(diff)
-        
-        assert 'num_lines' in features
-        assert 'num_files' in features
-        assert 'additions' in features
-        assert 'deletions' in features
-        assert features['num_files'] == 1
-    
-    def test_empty_diff(self, selector_instance):
-        """Test feature extraction from empty diff."""
-        features = selector_instance.extract_pr_features("")
-        
-        assert features['num_lines'] == 1  # Empty string has 1 line
-        assert features['num_files'] == 0
-        assert features['additions'] == 0
-        assert features['deletions'] == 0
-    
-    def test_multiple_files_detection(self, selector_instance):
-        """Test detection of multiple files in diff."""
-        diff = """diff --git a/file1.py b/file1.py
-+code
-diff --git a/file2.js b/file2.js
-+more code"""
-        features = selector_instance.extract_pr_features(diff)
-        
-        assert features['num_files'] == 2
-    
-    def test_python_file_detection(self, selector_instance):
-        """Test Python file detection."""
+        features = self.selector.extract_pr_features(diff)
+
+        self.assertIn("num_lines", features)
+        self.assertIn("num_files", features)
+        self.assertIn("additions", features)
+        self.assertIn("deletions", features)
+        self.assertEqual(features["num_files"], 1)
+
+    # ============================================================
+    # EMPTY DIFF
+    # ============================================================
+    def test_empty_diff(self):
+        features = self.selector.extract_pr_features("")
+
+        self.assertEqual(features["num_lines"], 1)  # empty string has 1 line
+        self.assertEqual(features["num_files"], 0)
+        self.assertEqual(features["additions"], 0)
+        self.assertEqual(features["deletions"], 0)
+
+    # ============================================================
+    # MULTIPLE FILES
+    # ============================================================
+    def test_multiple_files_detection(self):
+        diff = (
+            "diff --git a/file1.py b/file1.py\n+code\n"
+            "diff --git a/file2.js b/file2.js\n+more code"
+        )
+        features = self.selector.extract_pr_features(diff)
+
+        self.assertEqual(features["num_files"], 2)
+
+    # ============================================================
+    # LANGUAGE DETECTION
+    # ============================================================
+    def test_python_file_detection(self):
         diff = "diff --git a/script.py b/script.py"
-        features = selector_instance.extract_pr_features(diff)
-        
-        assert features['is_python'] == 1
-        assert features['is_js'] == 0
-        assert features['is_java'] == 0
-    
-    def test_javascript_file_detection(self, selector_instance):
-        """Test JavaScript file detection."""
+        features = self.selector.extract_pr_features(diff)
+
+        self.assertEqual(features["is_python"], 1)
+        self.assertEqual(features["is_js"], 0)
+        self.assertEqual(features["is_java"], 0)
+
+    def test_javascript_file_detection(self):
         diff = "diff --git a/app.js b/app.js"
-        features = selector_instance.extract_pr_features(diff)
-        
-        assert features['is_js'] == 1
-        assert features['is_python'] == 0
-    
-    def test_typescript_file_detection(self, selector_instance):
-        """Test TypeScript file detection."""
+        features = self.selector.extract_pr_features(diff)
+
+        self.assertEqual(features["is_js"], 1)
+        self.assertEqual(features["is_python"], 0)
+
+    def test_typescript_file_detection(self):
         diff = "diff --git a/component.ts b/component.ts"
-        features = selector_instance.extract_pr_features(diff)
-        
-        assert features['is_js'] == 1
-    
-    def test_java_file_detection(self, selector_instance):
-        """Test Java file detection."""
+        features = self.selector.extract_pr_features(diff)
+
+        self.assertEqual(features["is_js"], 1)
+
+    def test_java_file_detection(self):
         diff = "diff --git a/Main.java b/Main.java"
-        features = selector_instance.extract_pr_features(diff)
-        
-        assert features['is_java'] == 1
-    
-    def test_function_detection(self, selector_instance):
-        """Test function definition detection."""
+        features = self.selector.extract_pr_features(diff)
+
+        self.assertEqual(features["is_java"], 1)
+
+    # ============================================================
+    # CODE STRUCTURE FEATURES
+    # ============================================================
+    def test_function_detection(self):
         diff = "def my_function():\n    pass"
-        features = selector_instance.extract_pr_features(diff)
-        
-        assert features['has_functions'] == 1
-    
-    def test_import_detection(self, selector_instance):
-        """Test import statement detection."""
+        features = self.selector.extract_pr_features(diff)
+
+        self.assertEqual(features["has_functions"], 1)
+
+    def test_import_detection(self):
         diff = "import os\nfrom datetime import datetime"
-        features = selector_instance.extract_pr_features(diff)
-        
-        assert features['has_imports'] == 1
-    
-    def test_comment_detection(self, selector_instance):
-        """Test comment detection."""
-        diff = "# This is a comment\n// Another comment\n/* Block comment */"
-        features = selector_instance.extract_pr_features(diff)
-        
-        assert features['has_comments'] == 1
-    
-    def test_test_file_detection(self, selector_instance):
-        """Test test file detection."""
+        features = self.selector.extract_pr_features(diff)
+
+        self.assertEqual(features["has_imports"], 1)
+
+    def test_comment_detection(self):
+        diff = "# comment\n// another\n/* block */"
+        features = self.selector.extract_pr_features(diff)
+
+        self.assertEqual(features["has_comments"], 1)
+
+    # ============================================================
+    # SPECIAL FILE TYPES
+    # ============================================================
+    def test_test_file_detection(self):
         diff = "diff --git a/test_module.py b/test_module.py"
-        features = selector_instance.extract_pr_features(diff)
-        
-        assert features['has_test'] == 1
-    
-    def test_documentation_detection(self, selector_instance):
-        """Test documentation detection."""
-        diff = "README.md updated with new documentation"
-        features = selector_instance.extract_pr_features(diff)
-        
-        assert features['has_docs'] == 1
-    
-    def test_config_file_detection(self, selector_instance):
-        """Test config file detection."""
+        features = self.selector.extract_pr_features(diff)
+
+        self.assertEqual(features["has_test"], 1)
+
+    def test_documentation_detection(self):
+        diff = "README.md updated with new docs"
+        features = self.selector.extract_pr_features(diff)
+
+        self.assertEqual(features["has_docs"], 1)
+
+    def test_config_file_detection(self):
         diff = "diff --git a/config.json b/config.json"
-        features = selector_instance.extract_pr_features(diff)
-        
-        assert features['has_config'] == 1
-    
-    def test_net_changes_calculation(self, selector_instance):
-        """Test net changes calculation."""
-        diff = "+line1\n+line2\n+line3\n-line4"
-        features = selector_instance.extract_pr_features(diff)
-        
-        assert features['additions'] == 3
-        assert features['deletions'] == 1
-        assert features['net_changes'] == 2
-    
-    def test_large_diff_handling(self, selector_instance):
-        """Test handling of large diff with many lines."""
+        features = self.selector.extract_pr_features(diff)
+
+        self.assertEqual(features["has_config"], 1)
+
+    # ============================================================
+    # NET CHANGE CALCULATION
+    # ============================================================
+    def test_net_changes_calculation(self):
+        diff = "+l1\n+l2\n+l3\n-l4"
+        features = self.selector.extract_pr_features(diff)
+
+        self.assertEqual(features["additions"], 3)
+        self.assertEqual(features["deletions"], 1)
+        self.assertEqual(features["net_changes"], 2)
+
+    # ============================================================
+    # LARGE DIFF HANDLING
+    # ============================================================
+    def test_large_diff_handling(self):
         diff = "\n".join([f"+line{i}" for i in range(1000)])
-        features = selector_instance.extract_pr_features(diff)
-        
-        assert features['num_lines'] == 1000
-        assert features['additions'] == 1000
+        features = self.selector.extract_pr_features(diff)
+
+        self.assertEqual(features["num_lines"], 1000)
+        self.assertEqual(features["additions"], 1000)
