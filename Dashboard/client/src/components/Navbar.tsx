@@ -2,6 +2,7 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
+import { apiFetch } from "@/lib/apiClient";
 
 export default function Navbar() {
   const [location, setLocation] = useLocation();
@@ -9,20 +10,13 @@ export default function Navbar() {
   // Fetch logged-in user info
   const { data: user } = useQuery({
     queryKey: ["auth"],
-    queryFn: async () => {
-      const res = await fetch("http://localhost:5000/api/auth/me", {
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Not authenticated");
-      return res.json();
-    },
+    queryFn: () => apiFetch("/api/auth/me"),
     retry: false,
   });
 
   const handleLogout = async () => {
-    await fetch("http://localhost:5000/api/auth/logout", {
+    await apiFetch("/api/auth/logout", {
       method: "POST",
-      credentials: "include",
     });
 
     setLocation("/login");

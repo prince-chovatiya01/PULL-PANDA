@@ -3,6 +3,7 @@ import { PullRequestCard } from "../PullRequestCard";
 export default function PullRequestCardExample() {
   return (
     <PullRequestCard
+      owner="demo-owner"
       number={142}
       title="Add authentication middleware for API endpoints"
       author={{ name: "sarah-dev", avatar: "https://github.com/github.png" }}

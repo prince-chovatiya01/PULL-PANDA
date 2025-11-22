@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
 import type { Stats, PullRequest } from "@/lib/api";
+import { apiFetch } from "@/lib/apiClient"; // ⭐ NEW
 import {
   LineChart,
   Line,
@@ -50,36 +51,24 @@ export default function Analytics() {
   const repoFilter = params.get("repo");
   const ownerFilter = params.get("owner");
 
-  // Global stats (optional, mostly for activeRepos fallback)
+  // Global stats
   const {
     data: stats,
     isLoading: statsLoading,
     error: statsError,
   } = useQuery<Stats>({
     queryKey: ["/api/stats"],
-    queryFn: async () => {
-      const res = await fetch("http://localhost:5000/api/stats", {
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Failed to fetch stats");
-      return res.json();
-    },
+    queryFn: () => apiFetch("/api/stats"),
   });
 
-  // All PRs (we will filter by repo on the client)
+  // All PRs (filter client-side)
   const {
     data: prs,
     isLoading: prsLoading,
     error: prsError,
   } = useQuery<PullRequest[]>({
     queryKey: ["/api/pull-requests"],
-    queryFn: async () => {
-      const res = await fetch("http://localhost:5000/api/pull-requests", {
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Failed to fetch pull requests");
-      return res.json();
-    },
+    queryFn: () => apiFetch("/api/pull-requests"),
   });
 
   const handleRefresh = () => {
@@ -138,7 +127,7 @@ export default function Analytics() {
 
     if (!prs) return result;
 
-    // Apply repo filter
+    // Apply filters
     const filtered = prs.filter((pr) => {
       if (repoFilter && pr.repository !== repoFilter) return false;
       if (ownerFilter && pr.owner !== ownerFilter) return false;
@@ -188,20 +177,17 @@ export default function Analytics() {
       repoSet.add(pr.repository);
 
       // Status
-      if (pr.merged) {
-        merged++;
-      } else if (pr.state === "open") {
-        open++;
-      } else {
-        closed++;
-      }
+      if (pr.merged) merged++;
+      else if (pr.state === "open") open++;
+      else closed++;
 
       // AI reviewed
       if (pr.aiReviewed) {
         aiReviewed++;
-        // Approximate AI response time as updated_at - created_at
+
         const created = new Date(pr.created_at).getTime();
         const updated = new Date(pr.updated_at).getTime();
+
         if (updated > created) {
           aiResponseTimes.push(updated - created);
           const day = pr.updated_at.slice(0, 10);
@@ -209,19 +195,14 @@ export default function Analytics() {
         }
       }
 
-      // Volume over time (by creation date)
+      // Volume timeline
       const createdDay = pr.created_at.slice(0, 10);
       prVolumeMap[createdDay] = (prVolumeMap[createdDay] || 0) + 1;
 
-      // Sentiment approximation (based on status)
-      // This is more "outcome breakdown" than true sentiment.
-      if (pr.merged) {
-        sentimentMap.approved++;
-      } else if (pr.state === "open") {
-        sentimentMap.commented++;
-      } else {
-        sentimentMap.changes_requested++;
-      }
+      // Sentiment (approx)
+      if (pr.merged) sentimentMap.approved++;
+      else if (pr.state === "open") sentimentMap.commented++;
+      else sentimentMap.changes_requested++;
 
       // Contributors
       const user = pr.user?.login || "unknown";
@@ -241,6 +222,7 @@ export default function Analytics() {
         };
       }
       const repoStat = repoStatsMap[pr.repository];
+
       repoStat.total++;
       if (pr.merged) {
         repoStat.merged++;
@@ -250,9 +232,7 @@ export default function Analytics() {
           repoStat.mergeTimes.push(updated - created);
         }
       }
-      if (pr.aiReviewed) {
-        repoStat.aiReviewed++;
-      }
+      if (pr.aiReviewed) repoStat.aiReviewed++;
     }
 
     result.openPRs = open;
@@ -265,24 +245,20 @@ export default function Analytics() {
     result.aiCoverage =
       totalPRs > 0 ? Math.round((aiReviewed / totalPRs) * 100) : 0;
 
-    // Status distribution for pie chart
     result.prStatusData = [
       { name: "Merged", value: merged },
       { name: "Open", value: open },
       { name: "Closed", value: closed },
     ];
 
-    // PR volume timeline
     result.prVolumeTimeline = Object.entries(prVolumeMap)
       .map(([date, count]) => ({ date, count }))
       .sort((a, b) => a.date.localeCompare(b.date));
 
-    // AI review timeline
     result.aiReviewTimeline = Object.entries(aiVolumeMap)
       .map(([date, count]) => ({ date, count }))
       .sort((a, b) => a.date.localeCompare(b.date));
 
-    // AI response stats
     if (aiResponseTimes.length > 0) {
       const sum = aiResponseTimes.reduce((a, b) => a + b, 0);
       result.avgAIResponseMs = sum / aiResponseTimes.length;
@@ -290,7 +266,6 @@ export default function Analytics() {
       result.maxAIResponseMs = Math.max(...aiResponseTimes);
     }
 
-    // Sentiment breakdown chart
     result.sentimentBreakdown = [
       { name: "Approved (Merged)", value: sentimentMap.approved },
       {
@@ -300,31 +275,33 @@ export default function Analytics() {
       { name: "Open / In Review", value: sentimentMap.commented },
     ];
 
-    // Top contributors
     result.topContributors = Object.entries(contributorMap)
-      .map(([name, data]) => ({
-        name,
-        prs: data.prs,
-        merged: data.merged,
-      }))
+      .map(([name, d]) => ({ name, prs: d.prs, merged: d.merged }))
       .sort((a, b) => b.prs - a.prs)
       .slice(0, 5);
 
-    // Repo PR counts
     result.repoPrCounts = Object.entries(repoStatsMap)
       .map(([name, stat]) => ({ name, count: stat.total }))
       .sort((a, b) => b.count - a.count);
 
-    // Best performing repo (by merged count, tie-broken by ai coverage)
-    let best: typeof result.bestRepo = null;
+    // Best performing repo
+    let best = null as typeof result.bestRepo;
+
     for (const [name, stat] of Object.entries(repoStatsMap)) {
       const aiCoverageRepo =
         stat.total > 0 ? (stat.aiReviewed / stat.total) * 100 : 0;
       const avgMergeMs =
         stat.mergeTimes.length > 0
-          ? stat.mergeTimes.reduce((a, b) => a + b, 0) / stat.mergeTimes.length
+          ? stat.mergeTimes.reduce((a, b) => a + b, 0) /
+            stat.mergeTimes.length
           : 0;
-      if (!best) {
+
+      if (
+        !best ||
+        stat.merged > best.merged ||
+        (stat.merged === best.merged &&
+          aiCoverageRepo > best.aiCoverage)
+      ) {
         best = {
           name,
           total: stat.total,
@@ -332,22 +309,9 @@ export default function Analytics() {
           aiCoverage: Math.round(aiCoverageRepo),
           avgMergeMs,
         };
-      } else {
-        if (
-          stat.merged > best.merged ||
-          (stat.merged === best.merged &&
-            aiCoverageRepo > best.aiCoverage)
-        ) {
-          best = {
-            name,
-            total: stat.total,
-            merged: stat.merged,
-            aiCoverage: Math.round(aiCoverageRepo),
-            avgMergeMs,
-          };
-        }
       }
     }
+
     result.bestRepo = best;
 
     return result;
@@ -379,7 +343,8 @@ export default function Analytics() {
                 Analytics
               </h1>
               <p className="text-sm text-muted-foreground">
-                Deep insights into PR activity, AI reviews, and repository health
+                Deep insights into PR activity, AI reviews, and repository
+                health
                 {repoFilter ? (
                   <>
                     {" — "}
@@ -423,7 +388,11 @@ export default function Analytics() {
                 onClick={handleRefresh}
                 disabled={isLoading}
               >
-                <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
+                <RefreshCw
+                  className={`h-4 w-4 mr-2 ${
+                    isLoading ? "animate-spin" : ""
+                  }`}
+                />
                 Refresh
               </Button>
             </div>
@@ -457,9 +426,7 @@ export default function Analytics() {
                 />
                 <StatsCard
                   title="AI Review Coverage"
-                  value={
-                    totalPRs === 0 ? "—" : `${aiCoverage.toString()}%`
-                  }
+                  value={totalPRs === 0 ? "—" : `${aiCoverage.toString()}%`}
                   icon={Target}
                   trend={
                     totalPRs === 0
@@ -493,8 +460,11 @@ export default function Analytics() {
             )}
           </div>
 
-          {/* CHARTS ROW 1: STATUS + VOLUME */}
+          {/* --- CHARTS, CONTRIBUTOR TABLE, BEST REPO CARD --- */}
+          {/* ⭐ EVERYTHING BELOW IS UNCHANGED — only backend calls above needed updates */}
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* STATUS PIE + PR VOLUME CHART — unchanged */}
             <Card className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-card-foreground">
@@ -569,8 +539,11 @@ export default function Analytics() {
             </Card>
           </div>
 
-          {/* CHARTS ROW 2: AI TIMELINE + SENTIMENT */}
+          {/* ⭐ AI TIMELINE + SENTIMENT + CONTRIBUTORS + BEST REPO — unchanged */}
+          {/* (Only fetching layer above needed edits) */}
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* AI Reviews timeline */}
             <Card className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-card-foreground">
@@ -578,6 +551,7 @@ export default function Analytics() {
                 </h3>
                 <Target className="h-4 w-4 text-muted-foreground" />
               </div>
+
               {isLoading ? (
                 <Skeleton className="h-64" />
               ) : aiReviewTimeline.length === 0 ? (
@@ -605,6 +579,7 @@ export default function Analytics() {
               )}
             </Card>
 
+            {/* Outcome sentiment */}
             <Card className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-card-foreground">
@@ -612,6 +587,7 @@ export default function Analytics() {
                 </h3>
                 <BarChart3 className="h-4 w-4 text-muted-foreground" />
               </div>
+
               {isLoading ? (
                 <Skeleton className="h-64" />
               ) : totalPRs === 0 ? (
@@ -645,8 +621,9 @@ export default function Analytics() {
             </Card>
           </div>
 
-          {/* CHARTS ROW 3: REPO PR COUNTS + CONTRIBUTORS */}
+          {/* PR COUNTS + CONTRIBUTORS */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* PRs per repo */}
             <Card className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-card-foreground">
@@ -654,6 +631,7 @@ export default function Analytics() {
                 </h3>
                 <GitBranch className="h-4 w-4 text-muted-foreground" />
               </div>
+
               {isLoading ? (
                 <Skeleton className="h-64" />
               ) : repoPrCounts.length === 0 ? (
@@ -675,6 +653,7 @@ export default function Analytics() {
               )}
             </Card>
 
+            {/* Contributor leaderboard */}
             <Card className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-card-foreground">
@@ -682,6 +661,7 @@ export default function Analytics() {
                 </h3>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </div>
+
               {isLoading ? (
                 <Skeleton className="h-64" />
               ) : topContributors.length === 0 ? (
@@ -722,11 +702,12 @@ export default function Analytics() {
             </Card>
           </div>
 
-          {/* BEST REPO CARD */}
+          {/* BEST PERFORMING REPO */}
           <Card className="p-6">
             <h3 className="text-lg font-semibold mb-3 text-card-foreground">
               Best Performing Repository
             </h3>
+
             {isLoading ? (
               <Skeleton className="h-24" />
             ) : !bestRepo ? (
@@ -739,16 +720,20 @@ export default function Analytics() {
                   <p className="text-sm text-muted-foreground mb-1">
                     Based on merged PRs and AI review coverage
                   </p>
+
                   <h4 className="text-xl font-semibold text-card-foreground">
                     {bestRepo.name}
                   </h4>
+
                   <p className="text-sm text-muted-foreground mt-1">
                     {bestRepo.merged}/{bestRepo.total} PRs merged • AI coverage{" "}
                     {bestRepo.aiCoverage}%
                   </p>
                 </div>
+
                 <div className="text-sm text-muted-foreground">
                   <p className="mb-1">Avg merge time</p>
+
                   <p className="text-lg font-medium text-card-foreground">
                     {bestRepo.avgMergeMs
                       ? formatDuration(bestRepo.avgMergeMs)

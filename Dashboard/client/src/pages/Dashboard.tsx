@@ -1,4 +1,3 @@
-// SWE_project_website/client/src/pages/Dashboard.tsx
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { StatsCard } from "@/components/StatsCard";
@@ -17,6 +16,7 @@ import {
 import { useLocation } from "wouter";
 import { queryClient } from "@/lib/queryClient";
 import type { Repository, Stats } from "@/lib/api";
+import { apiFetch } from "@/lib/apiClient";   // ⭐ NEW
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
@@ -30,13 +30,7 @@ export default function Dashboard() {
     isRefetching: reposRefetching
   } = useQuery<Repository[]>({
     queryKey: ['/api/repositories'],
-    queryFn: async () => {
-      const res = await fetch("http://localhost:5000/api/repositories", {
-        credentials: "include"
-      });
-      if (!res.ok) throw new Error("Failed to fetch repositories");
-      return res.json();
-    }
+    queryFn: () => apiFetch("/api/repositories"),
   });
 
   // Fetch stats
@@ -47,13 +41,7 @@ export default function Dashboard() {
     isRefetching: statsRefetching
   } = useQuery<Stats>({
     queryKey: ['/api/stats'],
-    queryFn: async () => {
-      const res = await fetch("http://localhost:5000/api/stats", {
-        credentials: "include"
-      });
-      if (!res.ok) throw new Error("Failed to fetch stats");
-      return res.json();
-    }
+    queryFn: () => apiFetch("/api/stats"),
   });
 
   const filteredRepos =
@@ -75,9 +63,7 @@ export default function Dashboard() {
       <div className="flex-1 overflow-auto">
         <div className="max-w-7xl mx-auto p-6 space-y-6">
 
-          {/* ──────────────────────────── */}
-          {/* HEADER WITHOUT LOGOUT NOW   */}
-          {/* ──────────────────────────── */}
+          {/* HEADER */}
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
               <h1 className="text-2xl font-semibold text-foreground">

@@ -9,12 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
-import {
-  ExternalLink,
-  ArrowLeft,
-  MessageSquare,
-  Bot,
-} from "lucide-react";
+import { ExternalLink, ArrowLeft, MessageSquare, Bot } from "lucide-react";
+
+import { apiFetch } from "@/lib/apiClient";  // ⭐ NEW
 
 interface PRComment {
   id: number;
@@ -38,17 +35,11 @@ export default function PRDetails() {
   const [latestAIComment, setLatestAIComment] = useState<PRComment | null>(null);
   const [humanComments, setHumanComments] = useState<PRComment[]>([]);
 
-  // Fetch PR comments + reviews
+  // ⭐ Fetch PR comments + reviews using apiFetch
   const { data, isLoading, error } = useQuery({
     queryKey: ["pr-details", owner, repo, number],
-    queryFn: async () => {
-      const res = await fetch(
-        `http://localhost:5000/api/pull-requests/${owner}/${repo}/${number}/reviews`,
-        { credentials: "include" }
-      );
-      if (!res.ok) throw new Error("Failed to load PR details");
-      return res.json();
-    },
+    queryFn: () =>
+      apiFetch(`/api/pull-requests/${owner}/${repo}/${number}/reviews`),
   });
 
   // Process comments → separate AI vs Human
@@ -57,7 +48,7 @@ export default function PRDetails() {
 
     const all = data.allComments || [];
 
-    // Detect AI comment
+    // Detect AI (if comment contains "ai-powered review")
     const ai = all
       .filter((c: PRComment) =>
         c.body?.toLowerCase().includes("ai-powered review")
@@ -69,7 +60,7 @@ export default function PRDetails() {
 
     setLatestAIComment(ai[0] || null);
 
-    // Human comments = everything except AI ones
+    // Human comments
     const humans = all.filter(
       (c: PRComment) =>
         !c.body?.toLowerCase().includes("ai-powered review")
@@ -80,7 +71,6 @@ export default function PRDetails() {
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
-
       {/* Back Button */}
       <Button
         variant="outline"
@@ -89,12 +79,11 @@ export default function PRDetails() {
         <ArrowLeft className="h-4 w-4 mr-2" /> Back to {repo} PRs
       </Button>
 
-
       <h1 className="text-3xl font-semibold text-foreground">
         Pull Request Details
       </h1>
 
-      {/* ░░ LOADING ░░ */}
+      {/* LOADING */}
       {isLoading && (
         <div className="space-y-4">
           <Skeleton className="h-8" />
@@ -102,16 +91,13 @@ export default function PRDetails() {
         </div>
       )}
 
-      {/* ░░ ERROR ░░ */}
+      {/* ERROR */}
       {error && <p className="text-red-500">Failed to load PR details.</p>}
 
-      {/* ░░ CONTENT ░░ */}
+      {/* CONTENT */}
       {data && (
         <div className="space-y-6">
-
-          {/* ------------------------------------------------ */}
-          {/* PR SUMMARY CARD                                  */}
-          {/* ------------------------------------------------ */}
+          {/* PR SUMMARY CARD */}
           <Card className="p-5 space-y-3">
             <h2 className="text-xl font-semibold">
               {data.reviews?.[0]?.pull_request?.title ||
@@ -146,9 +132,7 @@ export default function PRDetails() {
             </Button>
           </Card>
 
-          {/* ------------------------------------------------ */}
-          {/* AI REVIEW SECTION                                */}
-          {/* ------------------------------------------------ */}
+          {/* AI REVIEW SECTION */}
           <Card className="p-5">
             <h2 className="text-xl font-semibold flex items-center gap-2">
               <Bot className="h-5 w-5" />
@@ -173,9 +157,7 @@ export default function PRDetails() {
             )}
           </Card>
 
-          {/* ------------------------------------------------ */}
-          {/* HUMAN COMMENTS                                   */}
-          {/* ------------------------------------------------ */}
+          {/* HUMAN COMMENTS */}
           <Card className="p-5 space-y-4">
             <h2 className="text-xl font-semibold flex items-center gap-2">
               <MessageSquare className="h-5 w-5" />

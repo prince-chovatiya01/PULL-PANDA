@@ -6,17 +6,13 @@ dotenv.config();
 import cors from "cors";
 import session from "express-session";
 
-import authRouter from "./auth";
-import { registerRoutes } from "./routes";
-
-import path from "path";
-import { fileURLToPath } from "url";
+import authRouter from "./auth.js";
+import { registerRoutes } from "./routes.js";
 
 const app = express();
 
 // ------------ ENV ------------
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const FRONTEND_URL = process.env.FRONTEND_URL || "*"; // Allow Vercel domain later
 
 // ------------ CORS ------------
 app.use(
@@ -34,7 +30,7 @@ app.use(
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: false, // Render free tier = HTTP
+      secure: false, // Railway free tier = HTTP
       sameSite: "lax",
       path: "/",
     },
@@ -57,18 +53,17 @@ app.use("/api/auth", authRouter);
     res.status(err.status || 500).json({ message: err.message });
   });
 
-  // ---------- STATIC FRONTEND (Production Only) ----------
-  const publicDir = path.join(__dirname, "..", "client-dist");
+  // ❗ REMOVE STATIC FRONTEND — FRONTEND IS ON VERCEL
+  // ❗ Do NOT serve frontend from backend
+  // ❗ This backend is API only
 
-  app.use(express.static(publicDir));
-
-  // Fallback to index.html for SPA routes
-  app.get("*", (_req, res) => {
-    res.sendFile(path.join(publicDir, "index.html"));
+  // Root check (important for Railway health-check)
+  app.get("/", (req, res) => {
+    res.json({ status: "Backend running", env: "production" });
   });
 
   // ---------- START SERVER ----------
-  const port = process.env.PORT || 5000;
+  const port = parseInt(process.env.PORT || "5000", 10);
   app.listen(port, "0.0.0.0", () => {
     console.log(`🚀 Server running on port ${port}`);
   });

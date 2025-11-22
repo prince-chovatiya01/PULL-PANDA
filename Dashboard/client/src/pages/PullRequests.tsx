@@ -1,4 +1,5 @@
-//SWE_project_website\client\src\pages\PullRequests.tsx
+// SWE_project_website/client/src/pages/PullRequests.tsx
+
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { PullRequestCard } from "@/components/PullRequestCard";
@@ -11,6 +12,7 @@ import { RefreshCw, ArrowLeft } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
 import type { PullRequest } from "@/lib/api";
 import { useLocation } from "wouter";
+import { apiFetch } from "@/lib/apiClient"; // ⭐ NEW
 
 export default function PullRequests() {
   const params = new URLSearchParams(window.location.search);
@@ -28,15 +30,13 @@ export default function PullRequests() {
 
   const { data: prs, isLoading, error, isRefetching } = useQuery<PullRequest[]>({
     queryKey: ['/api/pull-requests', repoFilter, ownerFilter],
-    queryFn: async () => {
-      const url =
+    queryFn: () => {
+      const path =
         repoFilter && ownerFilter
-          ? `http://localhost:5000/api/pull-requests?repo=${repoFilter}&owner=${ownerFilter}`
-          : `http://localhost:5000/api/pull-requests`;
+          ? `/api/pull-requests?repo=${repoFilter}&owner=${ownerFilter}`
+          : `/api/pull-requests`;
 
-      const res = await fetch(url, { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to fetch pull requests");
-      return res.json();
+      return apiFetch(path);
     },
   });
 
@@ -91,38 +91,37 @@ export default function PullRequests() {
             </div>
 
             <div className="flex items-center gap-3">
-            {/* Legend: AI Review Status */}
-            <div className="flex items-center gap-3 text-sm text-muted-foreground border rounded-md px-3 py-1">
-              <div className="flex items-center gap-1">
-                <span className="h-2 w-2 bg-green-500 rounded-full"></span>
-                <span>AI-Reviewed</span>
+              {/* Legend */}
+              <div className="flex items-center gap-3 text-sm text-muted-foreground border rounded-md px-3 py-1">
+                <div className="flex items-center gap-1">
+                  <span className="h-2 w-2 bg-green-500 rounded-full"></span>
+                  <span>AI-Reviewed</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="h-2 w-2 bg-orange-400 rounded-full"></span>
+                  <span>Pending</span>
+                </div>
               </div>
-              <div className="flex items-center gap-1">
-                <span className="h-2 w-2 bg-orange-400 rounded-full"></span>
-                <span>Pending</span>
-              </div>
-            </div>
 
-            {/* Back Button */}
-            {repoFilter && (
-              <Button variant="outline" onClick={() => setLocation("/")}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Dashboard
+              {/* Back Button */}
+              {repoFilter && (
+                <Button variant="outline" onClick={() => setLocation("/")}>
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Dashboard
+                </Button>
+              )}
+
+              {/* Refresh */}
+              <Button
+                variant="outline"
+                onClick={handleRefresh}
+                disabled={isRefetching}
+                data-testid="button-refresh-prs"
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${isRefetching ? "animate-spin" : ""}`} />
+                Refresh
               </Button>
-            )}
-
-            {/* Refresh */}
-            <Button
-              variant="outline"
-              onClick={handleRefresh}
-              disabled={isRefetching}
-              data-testid="button-refresh-prs"
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${isRefetching ? "animate-spin" : ""}`} />
-              Refresh
-            </Button>
-          </div>
-
+            </div>
           </div>
 
           <div className="flex flex-col gap-4">
@@ -169,7 +168,7 @@ export default function PullRequests() {
                   repository={pr.repository}
                   owner={pr.owner}
                   url={pr.html_url}
-                  aiReviewed={pr.aiReviewed}     
+                  aiReviewed={pr.aiReviewed}
                 />
               ))}
             </div>

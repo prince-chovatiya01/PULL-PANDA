@@ -31,6 +31,7 @@
 import { Redirect } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import Navbar from "@/components/Navbar";
+import { apiFetch } from "@/lib/apiClient";
 
 interface Props {
   children: React.ReactNode;
@@ -39,13 +40,7 @@ interface Props {
 export default function ProtectedRoute({ children }: Props) {
   const { isLoading, error } = useQuery({
     queryKey: ["auth"],
-    queryFn: async () => {
-      const res = await fetch("http://localhost:5000/api/auth/me", {
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Not authenticated");
-      return res.json();
-    },
+    queryFn: () => apiFetch("/api/auth/me"),
     retry: false,
   });
 
@@ -54,7 +49,7 @@ export default function ProtectedRoute({ children }: Props) {
 
   return (
     <>
-      <Navbar />   {/* 👈 NAVBAR ALWAYS VISIBLE */}
+      <Navbar />
       <div className="pt-4">{children}</div>
     </>
   );
