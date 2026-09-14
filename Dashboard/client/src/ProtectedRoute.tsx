@@ -1,33 +1,3 @@
-// // SWE_project_website\client\src\ProtectedRoute.tsx
-// import { Redirect } from "wouter";
-// import { useQuery } from "@tanstack/react-query";
-
-// interface ProtectedProps {
-//   component: React.ComponentType<any>;
-// }
-
-// export default function ProtectedRoute({ component: Component }: ProtectedProps) {
-//   const { data, isLoading, error } = useQuery({
-//     queryKey: ["/api/auth/me"],
-//     queryFn: async () => {
-//       const res = await fetch("/api/auth/me", {
-//         credentials: "include"
-//       });
-//       if (!res.ok) throw new Error("Not authenticated");
-//       return res.json();
-//     },
-//     retry: false,
-//   });
-
-//   if (isLoading) return <div>Loading…</div>;
-
-//   if (error) return <Redirect to="/login" />;
-
-//   return <Component user={data} />;
-// }
-
-
-// client/src/components/ProtectedRoute.tsx
 import { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/apiClient";
@@ -39,17 +9,25 @@ interface Props {
 
 export default function ProtectedRoute({ children }: Props) {
   const { isLoading, error } = useQuery({
-    queryKey: ["auth-check"],                // 🔥 DIFFERENT from Navbar
-    queryFn: () => apiFetch("/api/auth/me"), // fresh check
+    queryKey: ["auth-check"],
+    queryFn: () => apiFetch("/api/auth/me"),
     retry: false,
   });
 
-  // Still checking login session
-  if (isLoading) return <div className="text-white p-8">Loading...</div>;
+  if (isLoading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <p className="text-sm text-muted-foreground">Authenticating session...</p>
+        </div>
+      </div>
+    );
+  }
 
-  // User not logged in
-  if (error) return <Redirect to="/login" />;
+  if (error) {
+    return <Redirect to="/login" />;
+  }
 
-  // User logged in
   return <>{children}</>;
 }

@@ -1,5 +1,3 @@
-// SWE_project_website/client/src/pages/PullRequests.tsx
-
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { PullRequestCard } from "@/components/PullRequestCard";
@@ -8,11 +6,12 @@ import { FilterBar } from "@/components/FilterBar";
 import { ErrorState } from "@/components/ErrorState";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { RefreshCw, ArrowLeft } from "lucide-react";
+import { RefreshCw, ArrowLeft, Sparkles, Loader2 } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
 import type { PullRequest } from "@/lib/api";
 import { useLocation } from "wouter";
-import { apiFetch } from "@/lib/apiClient"; // ⭐ NEW
+import { apiFetch } from "@/lib/apiClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function PullRequests() {
   const params = new URLSearchParams(window.location.search);
@@ -21,7 +20,11 @@ export default function PullRequests() {
   const ownerFilter = params.get("owner");
 
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
+  const [isBatchReviewing, setIsBatchReviewing] = useState(false);
+  const [batchProgress, setBatchProgress] = useState<{ current: number; total: number } | null>(null);
+
   const [filters, setFilters] = useState([
     { id: "open", label: "Open", active: true },
     { id: "merged", label: "Merged", active: false },
@@ -74,13 +77,49 @@ export default function PullRequests() {
     });
   }, [prs, searchQuery, filters]);
 
+  // Pending open PRs count
+  const pendingPRs = useMemo(() => {
+    if (!prs) return [];
+    return prs.filter((pr) => pr.state === "open" && !pr.aiReviewed);
+  }, [prs]);
+
+  const handleBatchReview = async () => {
+    if (pendingPRs.length === 0) return;
+    setIsBatchReviewing(true);
+    setBatchProgress({ current: 0, total: pendingPRs.length });
+
+    let completed = 0;
+    for (let i = 0; i < pendingPRs.length; i++) {
+      const pr = pendingPRs[i];
+      setBatchProgress({ current: i + 1, total: pendingPRs.length });
+      try {
+        await apiFetch(`/api/pull-requests/${pr.owner}/${pr.repository}/${pr.number}/review`, {
+          method: "POST",
+        });
+        completed++;
+      } catch (err: any) {
+        console.error(`Failed to review PR #${pr.number}:`, err);
+      }
+    }
+
+    setIsBatchReviewing(false);
+    setBatchProgress(null);
+    toast({
+      title: "Batch Review Finished",
+      description: `Successfully analyzed and commented on ${completed} of ${pendingPRs.length} pull requests.`,
+    });
+
+    queryClient.invalidateQueries({ queryKey: ['/api/pull-requests'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
+  };
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-auto">
-        <div className="max-w-5xl mx-auto p-6 space-y-6">
+        <div className="max-w-5xl mx-auto space-y-6">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
-              <h1 className="text-2xl font-semibold text-foreground">
+              <h1 className="text-2xl font-bold tracking-tight text-foreground">
                 Pull Requests {repoFilter ? `for ${repoFilter}` : ""}
               </h1>
               <p className="text-sm text-muted-foreground mt-1">
@@ -90,30 +129,41 @@ export default function PullRequests() {
               </p>
             </div>
 
-            <div className="flex items-center gap-3">
-              {/* Legend */}
-              <div className="flex items-center gap-3 text-sm text-muted-foreground border rounded-md px-3 py-1">
-                <div className="flex items-center gap-1">
-                  <span className="h-2 w-2 bg-green-500 rounded-full"></span>
-                  <span>AI-Reviewed</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="h-2 w-2 bg-orange-400 rounded-full"></span>
-                  <span>Pending</span>
-                </div>
-              </div>
+            <div className="flex items-center gap-3 flex-wrap">
+              {/* Batch Review Button */}
+              {pendingPRs.length > 0 && (
+                <Button
+                  size="sm"
+                  onClick={handleBatchReview}
+                  disabled={isBatchReviewing}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
+                >
+                  {isBatchReviewing ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Reviewing {batchProgress?.current}/{batchProgress?.total}...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Review All Pending ({pendingPRs.length})
+                    </>
+                  )}
+                </Button>
+              )}
 
               {/* Back Button */}
               {repoFilter && (
-                <Button variant="outline" onClick={() => setLocation("/")}>
+                <Button variant="outline" size="sm" onClick={() => setLocation("/")}>
                   <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Dashboard
+                  Dashboard
                 </Button>
               )}
 
               {/* Refresh */}
               <Button
                 variant="outline"
+                size="sm"
                 onClick={handleRefresh}
                 disabled={isRefetching}
                 data-testid="button-refresh-prs"
@@ -128,7 +178,7 @@ export default function PullRequests() {
             <SearchBar
               value={searchQuery}
               onChange={setSearchQuery}
-              placeholder="Search pull requests..."
+              placeholder="Search pull requests by title, repository, author..."
             />
             <FilterBar
               filters={filters}
@@ -146,7 +196,7 @@ export default function PullRequests() {
           ) : isLoading ? (
             <div className="space-y-3">
               {[1, 2, 3, 4].map((i) => (
-                <Skeleton key={i} className="h-40" />
+                <Skeleton key={i} className="h-32" />
               ))}
             </div>
           ) : (
@@ -175,11 +225,11 @@ export default function PullRequests() {
           )}
 
           {!isLoading && !error && filteredPRs.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">
+            <div className="text-center py-12 border border-dashed border-border rounded-lg">
+              <p className="text-muted-foreground text-sm">
                 {searchQuery || filters.some((f) => f.active)
-                  ? "No pull requests found"
-                  : "No pull requests available"}
+                  ? "No pull requests found matching current search/filters."
+                  : "No pull requests found in monitored repositories."}
               </p>
             </div>
           )}

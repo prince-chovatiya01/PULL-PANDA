@@ -1,6 +1,8 @@
 import { SiGithub } from "react-icons/si";
-import { BarChart3, FileText, FolderGit2, GitPullRequest } from "lucide-react";
+import { BarChart3, FileText, FolderGit2, GitPullRequest, LogOut } from "lucide-react";
 import { Link, useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+import { apiFetch } from "@/lib/apiClient";
 import {
   Sidebar,
   SidebarContent,
@@ -14,6 +16,7 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 
 const navItems = [
   { title: "My Repos", url: "/", icon: FolderGit2 },
@@ -23,7 +26,26 @@ const navItems = [
 ];
 
 export function AppSidebar() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
+
+  const { data: user } = useQuery<{
+    login: string;
+    avatar_url: string;
+    name?: string;
+  }>({
+    queryKey: ["auth-sidebar"],
+    queryFn: () => apiFetch("/api/auth/me"),
+    retry: false,
+  });
+
+  const handleLogout = async () => {
+    try {
+      await apiFetch("/api/auth/logout", { method: "POST" });
+    } catch {
+      // ignore
+    }
+    setLocation("/login");
+  };
 
   return (
     <Sidebar>
@@ -34,12 +56,13 @@ export function AppSidebar() {
           </div>
           <div className="flex flex-col">
             <span className="text-sm font-semibold text-sidebar-foreground">
-              AI PR Review
+              Pull Panda
             </span>
-            <span className="text-xs text-muted-foreground">Agent Dashboard</span>
+            <span className="text-xs text-muted-foreground">AI Code Review</span>
           </div>
         </div>
       </SidebarHeader>
+
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
@@ -66,20 +89,32 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+
       <SidebarFooter className="p-4 border-t border-sidebar-border">
-        <div className="flex items-center gap-3">
-          <Avatar className="h-8 w-8">
-            <AvatarImage src="https://github.com/github.png" />
-            <AvatarFallback>GH</AvatarFallback>
-          </Avatar>
-          <div className="flex flex-col flex-1 min-w-0">
-            <span className="text-sm font-medium text-sidebar-foreground truncate">
-              GitHub User
-            </span>
-            <span className="text-xs text-muted-foreground truncate">
-              @githubuser
-            </span>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            <Avatar className="h-8 w-8 border border-border">
+              <AvatarImage src={user?.avatar_url || "https://github.com/github.png"} />
+              <AvatarFallback>{user?.login?.slice(0, 2).toUpperCase() || "GH"}</AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col min-w-0 flex-1">
+              <span className="text-sm font-medium text-sidebar-foreground truncate">
+                {user?.name || user?.login || "GitHub User"}
+              </span>
+              <span className="text-xs text-muted-foreground truncate">
+                @{user?.login || "authenticating"}
+              </span>
+            </div>
           </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleLogout}
+            title="Logout"
+            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+          >
+            <LogOut className="h-4 w-4" />
+          </Button>
         </div>
       </SidebarFooter>
     </Sidebar>
