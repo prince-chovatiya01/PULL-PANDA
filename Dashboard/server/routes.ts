@@ -261,12 +261,22 @@ export async function registerRoutes(app: Express): Promise<void> {
     "/api/pull-requests/:owner/:repo/:number/review",
     async (req: Request, res: Response) => {
       try {
-        const { token } = getClient(req);
+        const { octokit, token } = getClient(req);
         const { owner, repo, number } = req.params;
         const prNumber = parseInt(number);
 
         if (isNaN(prNumber)) {
           return res.status(400).json({ error: "Invalid PR number" });
+        }
+
+        // Validate that the authenticated user has access to the target repository
+        try {
+          await octokit.rest.repos.get({ owner, repo });
+        } catch (authErr: any) {
+          console.warn(`Access denied for user on ${owner}/${repo}:`, authErr.message);
+          return res.status(403).json({
+            error: "Forbidden: You do not have access to this repository on GitHub with your current OAuth session.",
+          });
         }
 
         console.log(`Triggering AI review for ${owner}/${repo} #${prNumber}...`);

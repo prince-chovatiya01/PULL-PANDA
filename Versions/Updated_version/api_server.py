@@ -1,21 +1,21 @@
 import os
 import sys
 from typing import Optional, Dict, Any
-from fastapi import FastAPI, HTTPException, Body
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 # Ensure current directory is in sys.path
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 if CURRENT_DIR not in sys.path:
     sys.path.insert(0, CURRENT_DIR)
 
-from selector import IterativePromptSelector, process_pr_with_selector
-from config import GITHUB_TOKEN, OWNER, REPO
+from selector import IterativePromptSelector
+from config import OWNER, REPO
 
 app = FastAPI(
     title="Pull Panda AI Engine API",
-    description="Bridge API exposing the Python AI PR Review engine, RAG, and Iterative Prompt Selector.",
+    description="Stateless bridge API exposing the Python AI PR Review engine, RAG, and Iterative Prompt Selector.",
     version="1.0.0"
 )
 
@@ -33,10 +33,10 @@ state_file_path = os.path.join(CURRENT_DIR, "selector_state.json")
 selector_instance.load_state(state_file_path)
 
 class ReviewRequest(BaseModel):
-    owner: Optional[str] = None
-    repo: Optional[str] = None
-    pr_number: int
-    token: Optional[str] = None
+    owner: str = Field(..., description="Target repository owner")
+    repo: str = Field(..., description="Target repository name")
+    pr_number: int = Field(..., description="Pull request number")
+    token: str = Field(..., description="Authenticated user GitHub OAuth access token")
     post_to_github: bool = True
 
 @app.get("/health")
@@ -91,25 +91,31 @@ def get_intelligence():
 @app.post("/api/ai/review")
 def review_pull_request(payload: ReviewRequest):
     """
-    Trigger end-to-end AI review pipeline on a GitHub PR:
-    - Fetches diff
+    Trigger end-to-end AI review pipeline on a GitHub PR using the authenticated user's OAuth token:
+    - Fetches diff using user's token
     - Computes static analysis (Bandit, Flake8, Radon)
     - Retrieves Pinecone RAG context
     - Selects optimal prompt strategy via ML/Multi-armed bandit
     - Generates structured AI review
     - Evaluates 5-dimension review quality (Clarity, Usefulness, Depth, Actionability, Positivity)
     - Updates selector model
-    - Posts review comment to GitHub PR
+    - Posts review comment to GitHub PR using user's token
     """
     owner = payload.owner or OWNER
     repo = payload.repo or REPO
-    token = payload.token or GITHUB_TOKEN or os.getenv("GITHUB_TOKEN")
+    token = payload.token.strip() if payload.token else ""
+
+    if not owner or not repo:
+        raise HTTPException(status_code=400, detail="Owner and repository must be specified.")
 
     if not token:
-        raise HTTPException(status_code=400, detail="GitHub Token is required for fetching and posting reviews.")
+        raise HTTPException(
+            status_code=400,
+            detail="Authenticated user GitHub OAuth token is required. Global provider token fallback is disabled."
+        )
 
     try:
-        # Run selector pipeline
+        # Run selector pipeline with user's ephemeral token
         diff_text = fetch_diff_safe(owner, repo, payload.pr_number, token)
         features = selector_instance.extract_pr_features(diff_text)
         features_vector = selector_instance.features_to_vector(features)
@@ -118,14 +124,14 @@ def review_pull_request(payload: ReviewRequest):
         review_text, static_output, elapsed, context = selector_instance.generate_review(diff_text, chosen_prompt)
         score, heur, meta_parsed = selector_instance.evaluate_review(diff_text, review_text, static_output, context)
 
-        # Update and persist selector state
+        # Update and persist selector state (zero token data stored)
         selector_instance.update_model(features_vector, chosen_prompt, score)
         selector_instance.save_results(
             payload.pr_number, features, chosen_prompt, review_text, score, heur, meta_parsed, static_output, context
         )
         selector_instance.save_state(state_file_path)
 
-        # Post to GitHub if enabled
+        # Post to GitHub if enabled using user's token
         github_comment_id = None
         if payload.post_to_github:
             from core import post_review_comment
@@ -177,4 +183,4 @@ def fetch_diff_safe(owner: str, repo: str, pr_number: int, token: str) -> str:
 if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("PYTHON_PORT", "8000"))
-    uvicorn.run(app, host="127.0.0.1", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=port)
